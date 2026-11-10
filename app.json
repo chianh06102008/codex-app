@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "codex-app",
+    "name": "Fair Price VN",
     "slug": "codex-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "codexapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -31,6 +31,13 @@
           "backgroundColor": "#208AEF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Fair Price VN uses the camera to photograph items and menus so it can check if a price is fair.",
+          "photosPermission": "Fair Price VN lets you choose a photo of an item or menu to check its price."
         }
       ]
     ],
