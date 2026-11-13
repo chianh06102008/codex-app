@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Fair Price VN",
+    "name": "Hanoi Flood Watch",
     "slug": "codex-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -36,8 +36,14 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Fair Price VN uses the camera to photograph items and menus so it can check if a price is fair.",
-          "photosPermission": "Fair Price VN lets you choose a photo of an item or menu to check its price."
+          "cameraPermission": "Hanoi Flood Watch uses the camera to photograph flooded streets so it can estimate the water depth.",
+          "photosPermission": "Hanoi Flood Watch lets you choose a photo of a flooded street to report it."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Hanoi Flood Watch uses your location to show the flood risk and flooded streets in your district."
         }
       ]
     ],
