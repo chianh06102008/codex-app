@@ -1,3 +1,4 @@
+import { hasManagedFloodData } from '@/lib/floodscout-runtime'
 import { revalidateTag } from 'next/cache'
 import { NextResponse } from 'next/server'
 import sharp from 'sharp'
@@ -10,6 +11,9 @@ function isValidDepth(val: unknown): val is DepthCategory {
 }
 
 export async function POST(request: Request) {
+  if (!hasManagedFloodData()) {
+    return NextResponse.json({ error: 'Shared flood reports require the managed backend.' }, { status: 503 })
+  }
   try {
     const form = await request.formData()
     const dryGroundConfirmed = form.get('dryGroundConfirmed') === 'true'
@@ -159,6 +163,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!hasManagedFloodData()) {
+    return NextResponse.json({ error: 'Shared flood reports require the managed backend.' }, { status: 503 })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const token = (searchParams.get('deviceToken') || '').trim()

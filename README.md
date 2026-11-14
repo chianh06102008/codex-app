@@ -1,5 +1,19 @@
 # FloodScout VN
 
+## Run the Next.js app locally
+
+Use the Node and pnpm versions in `.mise.toml`.
+
+1. Run `pnpm install --frozen-lockfile`.
+2. Create an ignored `.env.local` and set `APP_OPENAI_API_KEY` there for voice and AI features.
+3. Run `pnpm dev` and open http://localhost:3000.
+
+Local mode supports the map, live warning sources, voice and route lookup. Shared reports,
+the CMS and road-hazard screening rely on the Figma-managed backend. Local routes show
+when road-hazard coverage is unavailable.
+
+## Prototype files
+
 Open `preview.html` directly in a browser. Vietnamese is the default. Use the language button to switch to English, or enable the optional Google basemap. The schematic is illustrative. Destination checks return a refusal while verified warning and road data are unavailable.
 
 ## Expo

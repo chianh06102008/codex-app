@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FloodVectorMap, type FloodVectorMapHandle } from '@/components/floodscout/FloodVectorMap'
 import {
   MicButton,
@@ -114,7 +114,10 @@ export function HomeScreen({
   const topInset = useCameraSafeTopInset()
   const mapRef = useRef<FloodVectorMapHandle | null>(null)
   const rootRef = useGsapScreenEntrance([lang, officialFeedDegraded])
-  const bottomSheetRef = useGsapSheetEntrance(true)
+  const [routePanelOpen, setRoutePanelOpen] = useState(true)
+  const bottomSheetRef = useGsapSheetEntrance(routePanelOpen)
+  const routeLauncherRef = useRef<HTMLButtonElement>(null)
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const liveDotRef = useGsapPulse(Boolean(hazards?.isLive))
   const langBtnRef = useRef<HTMLButtonElement | null>(null)
 
@@ -122,6 +125,26 @@ export function HomeScreen({
   const [selectedLegendId, setSelectedLegendId] = useState<string | null>(null)
   const [activePreset, setActivePreset] = useState<MapCameraPreset>('pilot')
   const [radarFrameIdx, setRadarFrameIdx] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    if (!routePanelOpen) return
+    const onOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && !bottomSheetRef.current?.contains(event.target)) {
+        setRoutePanelOpen(false)
+      }
+    }
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || layersOpen) return
+      setRoutePanelOpen(false)
+      requestAnimationFrame(() => routeLauncherRef.current?.focus())
+    }
+    document.addEventListener('pointerdown', onOutsidePointer, true)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('pointerdown', onOutsidePointer, true)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [bottomSheetRef, layersOpen, routePanelOpen])
 
   const modalRef = useGsapSheetEntrance(layersOpen)
   const selectedLegend = LEGEND_ITEMS.find((item) => item.id === selectedLegendId)
@@ -316,14 +339,39 @@ export function HomeScreen({
 
       <div className="min-h-[110px] flex-1 pointer-events-none" />
 
-      {/* Search / Route Prompt Card (sits cleanly above Persistent White Footer) */}
+      {routePanelOpen ? (
       <div
+        id="home-route-panel"
         ref={bottomSheetRef}
-        className="relative z-20 bg-white drop-shadow-[0px_-6px_16px_rgba(26,28,20,0.1)] flex flex-col gap-[10px] items-center pb-[14px] pt-[10px] px-[16px] mx-0 md:mx-[16px] md:mb-[8px] rounded-tl-[26px] rounded-tr-[26px] md:rounded-[26px] w-full md:max-w-[448px]"
+        aria-labelledby="home-route-title"
+        onTouchStart={(event) => {
+          const touch = event.touches[0]
+          swipeStart.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null
+        }}
+        onTouchCancel={() => { swipeStart.current = null }}
+        onTouchEnd={(event) => {
+          const start = swipeStart.current
+          swipeStart.current = null
+          const touch = event.changedTouches[0]
+          if (!start || !touch) return
+          const down = touch.clientY - start.y
+          if (down >= 48 && down > Math.abs(touch.clientX - start.x)) setRoutePanelOpen(false)
+        }}
+        className="relative z-20 touch-pan-x bg-white drop-shadow-[0px_-6px_16px_rgba(26,28,20,0.1)] flex flex-col gap-[10px] items-center pb-[14px] pt-[10px] px-[16px] mx-0 md:mx-[16px] md:mb-[8px] rounded-tl-[26px] rounded-tr-[26px] md:rounded-[26px] w-full md:max-w-[448px]"
       >
-        <div className="bg-[#dfe1d8] h-[5px] rounded-[3px] w-[40px]" />
+        <button
+          type="button"
+          aria-label={lang === 'vi' ? 'Thu gọn bảng tìm đường' : 'Collapse route panel'}
+          onClick={() => {
+            setRoutePanelOpen(false)
+            requestAnimationFrame(() => routeLauncherRef.current?.focus())
+          }}
+          className="flex min-h-8 w-16 items-center justify-center rounded-full"
+        >
+          <span className="h-[5px] w-10 rounded-full bg-[#a8ada0]" />
+        </button>
         <div className="flex flex-col gap-[2px] items-start w-full">
-          <h2 className="font-['Plus_Jakarta_Sans:Bold'] font-bold leading-[26px] text-[#191b14] text-[19px] tracking-[-0.2px]">
+          <h2 id="home-route-title" className="font-['Plus_Jakarta_Sans:Bold'] font-bold leading-[26px] text-[#191b14] text-[19px] tracking-[-0.2px]">
             {lang === 'vi' ? 'Đi đường này?' : 'Compute safest route?'}
           </h2>
           <p className="font-['Plus_Jakarta_Sans:Regular'] leading-[19px] text-[#5d6157] text-[13px]">
@@ -349,6 +397,20 @@ export function HomeScreen({
           <MicButton size={48} lang={lang} onClick={() => onNavigate('ask')} />
         </div>
       </div>
+
+      ) : (
+        <div className="relative z-20 px-4 pb-3">
+          <button
+            ref={routeLauncherRef}
+            type="button"
+            aria-expanded={false}
+            onClick={() => setRoutePanelOpen(true)}
+            className="min-h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#191b14] shadow-md"
+          >
+            {lang === 'vi' ? 'Tìm đường' : 'Plan a route'}
+          </button>
+        </div>
+      )}
 
       {/* Map Layers, Corridors & Live Disaster APIs Sheet */}
       {layersOpen ? (

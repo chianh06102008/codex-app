@@ -1,3 +1,4 @@
+import { hasManagedFloodData } from '@/lib/floodscout-runtime'
 import { chooseEquivalentRoute } from '@/lib/floodscout-ai'
 import { NextResponse } from 'next/server'
 import {
@@ -365,6 +366,7 @@ export async function POST(request: Request) {
 
     const okResp: SafeRouteResponse = {
       status: 'route-found',
+      roadHazardCoverage: hasManagedFloodData(),
       origin,
       destination,
       mode,

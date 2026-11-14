@@ -133,7 +133,9 @@ export function RouteResultScreen({
             <>
               <div className="flex flex-col gap-[2px]">
                 <h2 className="font-['Plus_Jakarta_Sans:ExtraBold'] font-extrabold text-[21px] leading-[27px] tracking-[-0.3px] text-[#191b14]">
-                  {lang === 'vi'
+                  {routeResult.roadHazardCoverage === false
+                    ? lang === 'vi' ? 'Đã tìm thấy tuyến đường' : 'Route found'
+                    : lang === 'vi'
                     ? 'Đã tính tuyến an toàn nhất tránh vùng ngập'
                     : 'Safest detour computed around active hazards'}
                 </h2>
@@ -156,7 +158,7 @@ export function RouteResultScreen({
                     {lang === 'vi' ? 'Điểm an toàn' : 'Safety score'}
                   </span>
                   <span className="font-['Plus_Jakarta_Sans:Bold'] font-bold text-[19px] text-[#191b14]">
-                    {routeResult.safeRoute.safetyScore}/100
+                    {routeResult.roadHazardCoverage === false ? '—' : `${routeResult.safeRoute.safetyScore}/100`}
                   </span>
                 </div>
                 <div className="bg-[#eceee6] rounded-[15px] px-[10px] py-[9px] flex flex-col justify-between">
@@ -171,7 +173,9 @@ export function RouteResultScreen({
 
               <div className="bg-[#fff3e6] rounded-[16px] px-[14px] py-[10px] flex flex-col gap-[2px] w-full">
                 <p className="font-['Plus_Jakarta_Sans:Bold'] font-bold text-[14px] text-[#191b14]">
-                  {lang === 'vi'
+                  {routeResult.roadHazardCoverage === false
+                    ? lang === 'vi' ? 'Chưa có dữ liệu nguy hiểm theo tuyến.' : 'Road hazard coverage is unavailable.'
+                    : lang === 'vi'
                     ? 'Đây không phải xác nhận an toàn tuyệt đối.'
                     : 'This is not an absolute safety guarantee.'}
                 </p>

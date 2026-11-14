@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { getPayloadClient } from './payload'
+import { hasManagedFloodData } from './floodscout-runtime'
 import type {
   DepthCategory,
   FloodReportDTO,
@@ -52,6 +53,7 @@ export function computeReportFreshness(
 
 export const getCachedHazardSegments = unstable_cache(
   async (): Promise<HazardSegmentDTO[]> => {
+    if (!hasManagedFloodData()) return []
     const payload = await getPayloadClient()
     const res = await payload.find({
       collection: 'hazard-segments',
@@ -83,6 +85,7 @@ export const getCachedHazardSegments = unstable_cache(
 
 export const getCachedFloodReports = unstable_cache(
   async (): Promise<FloodReportDTO[]> => {
+    if (!hasManagedFloodData()) return []
     const payload = await getPayloadClient()
     const res = await payload.find({
       collection: 'flood-reports',

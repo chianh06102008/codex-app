@@ -164,6 +164,7 @@ export interface GeocodePlace {
 
 export interface SafeRouteResponse {
   status: 'route-found' | 'route-blocked'
+  roadHazardCoverage?: boolean
   origin: GeocodePlace
   destination: GeocodePlace
   mode: TravelMode
