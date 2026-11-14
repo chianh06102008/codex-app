@@ -13,6 +13,7 @@ import { sessionStore, updateSession } from '@/features/routing/session';
 import { syncSharedReports } from '@/features/report/reportStore';
 import { fetchRainAt } from './rain';
 import { updateLivePosition } from '@/features/live/liveStore';
+import { provinceFor, startVietnam, statementsFor } from '@/features/live/vietnam';
 import { officialStore, setOfficialSource } from '@/features/fusion/officialSource';
 import { timeoutSignal } from '@/lib/timeout';
 import pinned from '../../../fixtures/statements/2026-11-13_lqsl-984.json';
@@ -45,9 +46,12 @@ function namesProvince(s: OfficialStatement, province: string): boolean {
 
 function applyOfficial() {
   const province = officialStore.get().province ?? PILOT_PROVINCE;
+  // Old province names (before the 2025 merger) map to their new unit, so "Quảng Nam" bulletins count for Đà Nẵng.
+  const unit = provinceFor(province);
   setOfficialSource({
     feedStatus: raw.feedStatus,
-    statements: raw.statements.filter((s) => namesProvince(s, province)),
+    allStatements: raw.statements,
+    statements: unit ? statementsFor(unit, raw.statements) : raw.statements.filter((s) => namesProvince(s, province)),
     retrievedAt: raw.retrievedAt,
     simulated: false,
   });
@@ -88,7 +92,8 @@ export async function refreshOfficial(): Promise<boolean> {
 async function detectProvince(p: { latitude: number; longitude: number }) {
   try {
     const [place] = await Location.reverseGeocodeAsync(p);
-    const province = place?.region || place?.city || place?.subregion;
+    const found = place?.region || place?.city || place?.subregion;
+    const province = provinceFor(found)?.name ?? found;
     if (province && province !== officialStore.get().province) {
       setOfficialSource({ province });
       applyOfficial();
@@ -160,6 +165,7 @@ async function watchPosition() {
 }
 
 export function startLiveData() {
+  startVietnam();
   loadPinnedBulletin();
   void refreshOfficial();
   void refreshRain().then(watchPosition);

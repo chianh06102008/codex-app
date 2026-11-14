@@ -14,6 +14,7 @@ import { DemoPanel } from '@/features/demo/DemoPanel';
 import { useOfficialSource } from '@/features/fusion/officialSource';
 import { NearYou } from '@/features/near/NearYou';
 import { LiveOverlays } from '@/features/live/LiveOverlays';
+import { LIVE } from '@/copy/live';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
 import { STATE_STYLE } from '@/features/map/stateStyle';
@@ -131,12 +132,12 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 
         <View style={styles.controlsRow} pointerEvents="box-none">
           <Pressable
-            onPress={() => setLayersOpen(true)}
+            onPress={() => go('live')}
             accessibilityRole="button"
-            hitSlop={8} // the pill is 32 px tall; this keeps the touch target at 48
+            hitSlop={8}
             style={({ pressed }) => [styles.demoPill, pressed && styles.pressed]}
           >
-            <T t="small" w="semibold" color={COLORS.white}>{s.demoData}</T>
+            <T t="small" w="semibold" color={COLORS.white}>{LIVE[lang].nationwide}</T>
           </Pressable>
           <Pressable
             onPress={() => setLayersOpen(true)}

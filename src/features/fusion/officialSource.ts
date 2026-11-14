@@ -16,6 +16,8 @@ import type { RainContext } from '@/features/official/rain';
 export type OfficialSource = {
   feedStatus: OfficialFeedStatus;
   statements: OfficialStatement[];
+  /** Every bulletin received, nationwide (statements = only the phone's province). */
+  allStatements: OfficialStatement[];
   retrievedAt: string | null;
   /** True when the status comes from the demo switch rather than a real source. */
   simulated: boolean;
@@ -35,6 +37,7 @@ export type OfficialSource = {
 export const officialStore = createStore<OfficialSource>({
   feedStatus: 'unavailable',
   statements: [],
+  allStatements: [],
   retrievedAt: null,
   simulated: false,
   heavyRain: false,

@@ -1,5 +1,5 @@
 // Live situation where the phone is: what to do first, then the evidence, each with its source and age.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 
@@ -9,13 +9,16 @@ import type { Lang } from '@/copy/mapReport';
 import { COPY } from '@/copy/mapReport';
 import type { LatLon } from '@/domain/types';
 import { refreshAllLive, setShowRadar } from '@/features/live/liveStore';
+import { refreshVietnam } from '@/features/live/vietnam';
 import type { SourceKey } from '@/features/live/liveStore';
 import { useLiveSituation } from '@/features/live/useLiveSituation';
+import { nationwide, useVietnam } from '@/features/live/vietnam';
 import { STATE_STYLE } from '@/features/map/stateStyle';
 import { statementTitle } from '@/features/official/officialView';
 import { COLORS, RADIUS } from '@/theme';
 
 const LEVEL_COLOR = { act: '#B91C1C', prepare: '#C2410C', watch: '#33454E' } as const;
+const SEV = { warning: '#C2410C', heavy: '#B91C1C', rain: '#2563EB', quiet: '#64748B', unknown: '#94A3B8' } as const;
 
 function time(iso: string | undefined, lang: Lang) {
   return iso ? new Date(iso).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -35,6 +38,11 @@ export function LiveScreen({ lang }: { lang: Lang }) {
   const m = COPY[lang];
   const s = useLiveSituation();
   const { live } = s;
+  const vn = useVietnam();
+  const [allVn, setAllVn] = useState(false);
+  const provinces = nationwide(vn.rain, s.official.allStatements);
+  const vnWarn = provinces.filter((p) => p.severity === 'warning').length;
+  const vnHeavy = provinces.filter((p) => p.severity === 'heavy').length;
 
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -74,7 +82,7 @@ export function LiveScreen({ lang }: { lang: Lang }) {
     <View style={styles.wrap}>
       <View style={styles.titleRow}>
         <T t="title" w="bold" style={styles.flex}>{c.title}</T>
-        <Pressable onPress={refreshAllLive} accessibilityRole="button" style={styles.refresh} hitSlop={8}>
+        <Pressable onPress={() => { refreshAllLive(); void refreshVietnam(); }} accessibilityRole="button" style={styles.refresh} hitSlop={8}>
           <Icon source="refresh" size={18} color={COLORS.ink} />
           <T t="small" w="semibold">{c.refresh}</T>
         </Pressable>
@@ -130,6 +138,33 @@ export function LiveScreen({ lang }: { lang: Lang }) {
             <T t="small" color={COLORS.warningInk} style={styles.link}>{statementTitle(st) ?? st.issuer}</T>
           </Pressable>
         ))}
+      </Section>
+
+      <Section
+        title={c.vnTitle}
+        source={c.vnSource}
+        status={<T t="tiny" color={COLORS.inkSoft}>{vn.loading ? c.loading : vn.updated ? c.updated(time(vn.updated, lang)) : vn.error ? c.failed : c.loading}</T>}
+      >
+        <T t="small" w="semibold">{c.vnCount(vnWarn, vnHeavy)}</T>
+        {(allVn ? provinces : provinces.slice(0, 8)).map((p) => (
+          <View key={p.province.name} style={styles.roadRow}>
+            <View style={[styles.sevDot, { backgroundColor: SEV[p.severity] }]} />
+            <View style={styles.flex}>
+              <T t="small" w="semibold">{p.province.name} · {c[`sev_${p.severity}`]}</T>
+              {p.rain && <T t="tiny" color={COLORS.inkSoft}>{c.vnLine(p.rain.nowMm, p.rain.todayMm, p.rain.tomorrowMm)}</T>}
+              {p.inForce.map((st) => (
+                <Pressable key={st.id} onPress={() => void Linking.openURL(st.source_url)} accessibilityRole="link">
+                  <T t="tiny" color={COLORS.warningInk} style={styles.link} numberOfLines={2}>{statementTitle(st) ?? st.issuer}</T>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ))}
+        {!allVn && provinces.length > 8 && (
+          <Pressable onPress={() => setAllVn(true)} accessibilityRole="button">
+            <T t="small" w="semibold" style={styles.link}>{c.showAll} ({provinces.length})</T>
+          </Pressable>
+        )}
       </Section>
 
       <Section title={c.alerts} source={c.alertsSource} status={status('alerts')}>
@@ -275,6 +310,7 @@ const styles = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
   bar: { width: '80%', borderRadius: 3 },
   swatch: { width: 16, height: 5, borderRadius: 3 },
+  sevDot: { width: 12, height: 12, borderRadius: 6 },
   roadRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   link: { textDecorationLine: 'underline' },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: COLORS.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, minHeight: 44 },

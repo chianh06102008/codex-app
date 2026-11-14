@@ -13,7 +13,7 @@ const USE_OSM_TILES = Platform.OS !== 'ios';
 const ATTRIBUTION = USE_OSM_TILES ? MAP_TILE_ATTRIBUTION : '© OpenStreetMap contributors';
 import type { LatLon, OfficialStatement, SegmentState } from '@/domain/types';
 import { useOfficialSource } from '@/features/fusion/officialSource';
-import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION } from './roads';
+import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION, insideSlice } from './roads';
 
 import { BRAND, STATE_STYLE } from './stateStyle';
 
@@ -94,7 +94,7 @@ function FloodMapInner({
         {USE_OSM_TILES && (
           <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={19} shouldReplaceMapContent zIndex={-1} tileCacheMaxAge={7 * 24 * 3600} />
         )}
-        {feedUnavailable && (
+        {feedUnavailable && (!userLocation || insideSlice(userLocation)) && (
           <Polygon
             coordinates={SLICE_POLYGON}
             fillColor="rgba(110, 91, 170, 0.12)"
