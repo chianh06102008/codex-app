@@ -5,12 +5,34 @@
 Use the Node and pnpm versions in `.mise.toml`.
 
 1. Run `pnpm install --frozen-lockfile`.
-2. Create an ignored `.env.local` and set `APP_OPENAI_API_KEY` there for voice and AI features.
-3. Run `pnpm dev` and open http://localhost:3000.
+2. Copy `.env.example` to `.env.local` and set `APP_OPENAI_API_KEY` for voice and AI features.
+3. Generate a separate random secret with `node --input-type=module -e "import { randomBytes } from 'node:crypto'; console.log(randomBytes(32).toString('hex'))"` and save it as `PAYLOAD_SECRET` in the same file.
+4. Run `pnpm dev`, open http://localhost:3000, and visit http://localhost:3000/admin to create the first admin.
 
-Local mode supports the map, live warning sources, voice and route lookup. Shared reports,
-the CMS and road-hazard screening rely on the Figma-managed backend. Local routes show
-when road-hazard coverage is unavailable.
+The demo stores Payload records in the ignored `floodscout.sqlite` file and uploads in `media/`.
+The database starts empty. Add current hazard segments in the CMS to give routing local
+road data. Figma-hosted records require a separate import. For a shared demo, use the hosted setup below.
+
+## Host the shared demo
+
+Run one instance on a Node server with a persistent disk. Install from the lockfile
+with `pnpm install --frozen-lockfile`. Configure these environment variables on the server.
+
+| Variable | Value |
+| --- | --- |
+| `APP_OPENAI_API_KEY` | A restricted key for this deployment |
+| `PAYLOAD_SECRET` | A separate random secret |
+| `DATABASE_URL` | An absolute SQLite file URL on the persistent disk, e.g. `file:/var/lib/floodscout/floodscout.sqlite` |
+| `UPLOADS_DIR` | An absolute directory on that disk, e.g. `/var/lib/floodscout/media` |
+| `APP_PUBLIC_URL` | The external HTTPS URL |
+
+On a fresh database, run `pnpm db:migrate` and then `pnpm build`. Start with
+`pnpm start`. Put an HTTPS reverse proxy in front of the local port and
+restrict the demo to invited users at the proxy before sharing its URL.
+HTTPS enables microphone and location permissions on remote devices.
+Create the first CMS admin at `/admin` through that protected URL. Back up the
+SQLite database and upload directory together. Existing development databases
+created by schema push should be kept separately from the fresh hosted database.
 
 ## Prototype files
 

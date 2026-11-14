@@ -10,6 +10,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid recording size' }, { status: 413 })
   }
 
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('multipart/form-data;')) {
+    return NextResponse.json({ error: 'Expected multipart form data' }, { status: 415 })
+  }
+
   try {
     const input = await request.formData()
     const audio = input.get('audio')

@@ -41,6 +41,7 @@ export const Media: CollectionConfig = {
     createTagField({ relationTo: 'tags' }),
   ],
   upload: {
+    staticDir: process.env.UPLOADS_DIR || undefined,
     modifyResponseHeaders: ({ headers }) => {
       headers.set('Cache-Control', 'public, max-age=3600, s-maxage=3600')
       return headers

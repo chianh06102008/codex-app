@@ -14,6 +14,10 @@ export async function POST(request: Request) {
   if (!hasManagedFloodData()) {
     return NextResponse.json({ error: 'Shared flood reports require the managed backend.' }, { status: 503 })
   }
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('multipart/form-data;')) {
+    return NextResponse.json({ error: 'Expected multipart form data' }, { status: 415 })
+  }
+
   try {
     const form = await request.formData()
     const dryGroundConfirmed = form.get('dryGroundConfirmed') === 'true'

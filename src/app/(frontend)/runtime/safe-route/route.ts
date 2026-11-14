@@ -366,7 +366,7 @@ export async function POST(request: Request) {
 
     const okResp: SafeRouteResponse = {
       status: 'route-found',
-      roadHazardCoverage: hasManagedFloodData(),
+      roadHazardCoverage: segments.length > 0 || activeReports.some((report) => report.snappedGeometry.length >= 2),
       origin,
       destination,
       mode,
