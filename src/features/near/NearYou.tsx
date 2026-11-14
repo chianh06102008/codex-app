@@ -65,6 +65,10 @@ export function NearYou({
         <T t="small" color={COLORS.inkSoft}>{c.near_locating}</T>
       ) : (
         <>
+          <T t="tiny" color={COLORS.inkSoft}>
+            GPS {live.here.latitude.toFixed(5)}, {live.here.longitude.toFixed(5)}
+            {official.userAccuracyM !== null ? ` · ±${Math.round(official.userAccuracyM)} m` : ''}
+          </T>
           <T t="small" w="semibold" color={view.tone === 'warning' ? COLORS.warningInk : COLORS.ink}>{officialLine}</T>
           {s.overall.why.slice(0, 2).map((k) => (
             <T key={k} t="small" w="semibold" color={LEVEL_COLOR[level]}>• {l[`why_${k}` as keyof typeof l] as string}</T>

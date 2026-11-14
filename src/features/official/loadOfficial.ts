@@ -98,13 +98,22 @@ async function detectProvince(p: { latitude: number; longitude: number }) {
   }
 }
 
+function publishPosition(pos: Location.LocationObject) {
+  const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+  setOfficialSource({ userLocation: p, userAccuracyM: pos.coords.accuracy ?? null });
+  updateLivePosition(p);
+}
+
 /** The phone's position if permission is given; null otherwise (never blocks the app). */
 async function currentPosition() {
   try {
     const perm = await Location.requestForegroundPermissionsAsync();
     if (perm.status !== 'granted') return null;
-    const last = await Location.getLastKnownPositionAsync();
-    const pos = last ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    // Show the cached fix at once (if under 2 min old), then ask the GPS for a precise one.
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 120_000 });
+    if (last) publishPosition(last);
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+    publishPosition(pos);
     return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
   } catch {
     return null;
@@ -140,11 +149,11 @@ async function watchPosition() {
     const perm = await Location.getForegroundPermissionsAsync();
     if (perm.status !== 'granted') return;
     watching = true;
-    await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 150 }, (pos) => {
-      const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setOfficialSource({ userLocation: p });
-      updateLivePosition(p);
-    });
+    // Precise, continuous fix: every 10 m or 5 s, whichever comes first.
+    await Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: 10, timeInterval: 5000 },
+      publishPosition,
+    );
   } catch {
     watching = false;
   }

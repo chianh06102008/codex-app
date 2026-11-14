@@ -26,6 +26,8 @@ export type OfficialSource = {
   rain: RainContext | null;
   /** Where the phone is, when location permission was given. */
   userLocation: LatLon | null;
+  /** GPS accuracy radius in metres for userLocation. */
+  userAccuracyM: number | null;
   /** The phone's province from reverse geocoding (null until known). */
   province: string | null;
 };
@@ -39,6 +41,7 @@ export const officialStore = createStore<OfficialSource>({
   heavyRainSimulated: false,
   rain: null,
   userLocation: null,
+  userAccuracyM: null,
   province: null,
 });
 

@@ -2,9 +2,9 @@
 // The official/uncertain layer has no off switch (PRD T14). On refusal, pass no
 // route: nothing is drawn through blocked roads (P3).
 import { memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
-import { Text } from 'react-native-paper';
+import { Icon, Text } from 'react-native-paper';
 
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from '@/config';
 
@@ -153,6 +153,17 @@ function FloodMapInner({
         {origin && <Marker coordinate={origin} pinColor={BRAND.primary} title="A" />}
         {destination && <Marker coordinate={destination} pinColor="#7A1F5C" title="B" />}
       </MapView>
+      {userLocation && (
+        <Pressable
+          onPress={() => mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 600)}
+          accessibilityRole="button"
+          accessibilityLabel="Vị trí của tôi"
+          style={styles.locate}
+          hitSlop={8}
+        >
+          <Icon source="crosshairs-gps" size={22} color="#1D4ED8" />
+        </Pressable>
+      )}
       <View style={styles.attribution} pointerEvents="none">
         <Text style={styles.attributionText}>{ATTRIBUTION}</Text>
       </View>
@@ -164,6 +175,10 @@ export const FloodMap = memo(FloodMapInner);
 
 const styles = StyleSheet.create({
   wrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: '#DCEBE8' },
+  locate: {
+    position: 'absolute', right: 12, top: '42%', width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+  },
   attribution: {
     position: 'absolute',
     right: 8,
