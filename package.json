@@ -1,0 +1,25 @@
+{
+  "name": "floodscout",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "maps-server": "node --env-file=.env server/maps.mjs"
+  },
+  "dependencies": {
+    "expo": "~55.0.0",
+    "expo-constants": "~55.0.0",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-maps": "1.27.2",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-paper": "^5.14.5"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2",
+    "@types/react": "~19.2.0"
+  }
+}

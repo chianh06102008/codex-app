@@ -1,0 +1,714 @@
+{
+  "library": "Taro ADI",
+  "version": "2026-11-14",
+  "source_text_included": false,
+  "count": 64,
+  "entries": [
+    {
+      "id": "ADI-00-GOVERNANCE-AGENT-RETRIEVAL",
+      "path": "00-GOVERNANCE/AGENT-RETRIEVAL.md",
+      "title": "Taro ADI retrieval and selection contract",
+      "tags": [],
+      "sha256": "9066f2028250801515b087f996f376b8605f5b8b9a2c44a9d4410162d89d9063",
+      "bytes": 3659,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-CHANGELOG",
+      "path": "00-GOVERNANCE/CHANGELOG.md",
+      "title": "Changelog",
+      "tags": [],
+      "sha256": "28557007d27b2d2ef68ed4237d1ba3690b4a03b1c71c5db3abbeee05bf187ba4",
+      "bytes": 528,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-IMPORT-GUIDE",
+      "path": "00-GOVERNANCE/IMPORT-GUIDE.md",
+      "title": "Importing this library into Taro",
+      "tags": [],
+      "sha256": "d36c27aa9b69ccc08358a17c8dd254c7590f5c00fa544757a0ae366bf7f5cfce",
+      "bytes": 2712,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-LICENSING",
+      "path": "00-GOVERNANCE/LICENSING.md",
+      "title": "Source rights and redistribution policy",
+      "tags": [],
+      "sha256": "0b7cfd4fc5eeb852896c016c51bc24d4b3c7f901cda5db9a476399f26228e7c6",
+      "bytes": 5035,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-PROVENANCE",
+      "path": "00-GOVERNANCE/PROVENANCE.md",
+      "title": "Evidence, provenance and confidence",
+      "tags": [],
+      "sha256": "6dba86f5556a3d36b793b8289012ecb1c0f5dca70658e4f6294c8c42b5010d32",
+      "bytes": 1754,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-RULE-SCHEMA",
+      "path": "00-GOVERNANCE/RULE-SCHEMA.md",
+      "title": "Markdown rule format for ingestion",
+      "tags": [],
+      "sha256": "1a03e6152a4f6a5175ae52ba11f1fda51d5e7ef81184c6cf52172199e2b23d86",
+      "bytes": 2063,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-00-GOVERNANCE-SOURCE-INDEX",
+      "path": "00-GOVERNANCE/SOURCE-INDEX.md",
+      "title": "Official source index and citation policy",
+      "tags": [],
+      "sha256": "26d30cc079d51732e3dc3a98bf47c403079d34e3efdefa77756147e8a72b0ddf",
+      "bytes": 2361,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-ISO-9241_110_2020",
+      "path": "01-ISO/9241-110-2020.md",
+      "title": "ISO 9241-110:2020 \u2014 interaction-principle companion",
+      "tags": [],
+      "sha256": "ad8912ebc0f4f8fb123ed95ea0988a7c38957368f5809234d86b42a673a26a16",
+      "bytes": 3405,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-ISO-9241_112_2025",
+      "path": "01-ISO/9241-112-2025.md",
+      "title": "ISO 9241-112:2025 \u2014 information-presentation companion",
+      "tags": [],
+      "sha256": "5cad0a840225d7dfea51204f7b64f1d2726a1963d15d3682f5122d0ac50cf2cb",
+      "bytes": 3302,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-ISO-9241_210_2019",
+      "path": "01-ISO/9241-210-2019.md",
+      "title": "ISO 9241-210:2019 \u2014 human-centred process companion",
+      "tags": [],
+      "sha256": "61c6043ce69a0888ecc2f2f1eb94eb77309c6a38a2120763653d5b9ffc4ef16d",
+      "bytes": 3251,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-02-APPLE-01_PLATFORMS",
+      "path": "02-APPLE/01-platforms.md",
+      "title": "Apple HIG \u2014 platform adaptation",
+      "tags": [
+        "apple",
+        "platform",
+        "native"
+      ],
+      "sha256": "8e59d17a7d2e8adef9a2bd9e33c093e0865f92b40338fb9e97b87764121e38e2",
+      "bytes": 4802,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-02-APPLE-02_FOUNDATIONS",
+      "path": "02-APPLE/02-foundations.md",
+      "title": "Apple HIG \u2014 foundations",
+      "tags": [
+        "apple",
+        "foundations"
+      ],
+      "sha256": "dd163fc382a0be4a8df3d2261c1cf39a1234810c60386987a1a24488ccf51f59",
+      "bytes": 4695,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-02-APPLE-03_COMPONENTS",
+      "path": "02-APPLE/03-components.md",
+      "title": "Apple HIG \u2014 components",
+      "tags": [
+        "apple",
+        "components"
+      ],
+      "sha256": "34cf0b4b192596a672b26bdfe8a0cc12252df48852457bc9f96a41e13d916c52",
+      "bytes": 4481,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-02-APPLE-04_PATTERNS",
+      "path": "02-APPLE/04-patterns.md",
+      "title": "Apple HIG \u2014 interaction patterns",
+      "tags": [
+        "apple",
+        "patterns"
+      ],
+      "sha256": "166ecf295dd85d0af009111be10d8ff2abb5c1572a64fe39c64b22fd3069019f",
+      "bytes": 4328,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-02-APPLE-05_INPUTS",
+      "path": "02-APPLE/05-inputs.md",
+      "title": "Apple HIG \u2014 input methods",
+      "tags": [
+        "apple",
+        "inputs"
+      ],
+      "sha256": "3d3d37409433b8628e83b8963b15a87232bcf40b6a757ff8f0fb5bc1eeff9b55",
+      "bytes": 4169,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-03-FLUENT-01_FOUNDATIONS",
+      "path": "03-FLUENT/01-foundations.md",
+      "title": "Microsoft Fluent 2 \u2014 foundations",
+      "tags": [
+        "fluent",
+        "foundations"
+      ],
+      "sha256": "917e0dd5006541c730f424d34d1a63802087f6040bca1fc93d9a94fe8d77a11a",
+      "bytes": 4405,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-03-FLUENT-02_TOKENS",
+      "path": "03-FLUENT/02-tokens.md",
+      "title": "Microsoft Fluent 2 \u2014 design tokens",
+      "tags": [
+        "fluent",
+        "tokens"
+      ],
+      "sha256": "60809dbe18c573d4e02f126eabc65ca0025c2a727e515e05ae781a5918418f4f",
+      "bytes": 4339,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-03-FLUENT-03_COMPONENTS",
+      "path": "03-FLUENT/03-components.md",
+      "title": "Microsoft Fluent 2 \u2014 component selection",
+      "tags": [
+        "fluent",
+        "components"
+      ],
+      "sha256": "6f7ee0f10b1ef9dfe688f9806f6f899acdbc39656c89787b6a4a79ce00fc8e7c",
+      "bytes": 4275,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-03-FLUENT-04_INTERACTION",
+      "path": "03-FLUENT/04-interaction.md",
+      "title": "Microsoft Fluent 2 \u2014 productivity interaction",
+      "tags": [
+        "fluent",
+        "interaction"
+      ],
+      "sha256": "e584f781d8b55859d85c522c95588b8d8e9e186f376f5674f956f59b247408db",
+      "bytes": 4268,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-03-FLUENT-05_CONTENT_ACCESSIBILITY",
+      "path": "03-FLUENT/05-content-accessibility.md",
+      "title": "Microsoft Fluent 2 \u2014 content and accessibility",
+      "tags": [
+        "fluent",
+        "content"
+      ],
+      "sha256": "2df0280aadff2690d144675207c35c437c925b05ae28e85d62d4a47f46250c97",
+      "bytes": 4306,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-04-MATERIAL-01_FOUNDATIONS",
+      "path": "04-MATERIAL/01-foundations.md",
+      "title": "Material Design 3 \u2014 foundations",
+      "tags": [
+        "material",
+        "foundations"
+      ],
+      "sha256": "6deb736aa0149e916f598f9c5ed27dca3faf665db990ef39a3ce677121ed2b9c",
+      "bytes": 4318,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-04-MATERIAL-02_TOKENS",
+      "path": "04-MATERIAL/02-tokens.md",
+      "title": "Material Design 3 \u2014 theme and token architecture",
+      "tags": [
+        "material",
+        "tokens"
+      ],
+      "sha256": "cd5be0c736d9f5bfce89993b765bd121be64b1083c3e9dee50df01a534603a74",
+      "bytes": 4334,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-04-MATERIAL-03_COMPONENTS",
+      "path": "04-MATERIAL/03-components.md",
+      "title": "Material Design 3 \u2014 components",
+      "tags": [
+        "material",
+        "components"
+      ],
+      "sha256": "90768d1da53ec1cccb8da53680b175640845f288088bb8190cc74224b1ec6334",
+      "bytes": 4386,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-04-MATERIAL-04_ADAPTIVE",
+      "path": "04-MATERIAL/04-adaptive.md",
+      "title": "Material Design 3 \u2014 adaptive layouts and inputs",
+      "tags": [
+        "material",
+        "adaptive"
+      ],
+      "sha256": "b53c922a1d3ac71bc785b99624a234abbaa18cb073ca8abb91ed81b7b93bf190",
+      "bytes": 4359,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-04-MATERIAL-05_EXPRESSIVE",
+      "path": "04-MATERIAL/05-expressive.md",
+      "title": "Material 3 Expressive \u2014 separate optional layer",
+      "tags": [
+        "material",
+        "expressive"
+      ],
+      "sha256": "77195f52a99eba92c0419b18d474581bcda1f3fed16e3cc623f835d62c372f46",
+      "bytes": 4584,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-05-CARBON-01_FOUNDATIONS",
+      "path": "05-CARBON/01-foundations.md",
+      "title": "IBM Carbon \u2014 foundations",
+      "tags": [
+        "carbon",
+        "foundations"
+      ],
+      "sha256": "7dfa3303a338c721e3ba435277111e8c041812fe10742111b6dc42f500053a42",
+      "bytes": 4337,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-05-CARBON-02_COMPONENTS",
+      "path": "05-CARBON/02-components.md",
+      "title": "IBM Carbon \u2014 components",
+      "tags": [
+        "carbon",
+        "components"
+      ],
+      "sha256": "507a4f0bc757112f152ee95853139c75117bcf9c483aa9776eacfdd596b118e5",
+      "bytes": 4252,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-05-CARBON-03_PATTERNS",
+      "path": "05-CARBON/03-patterns.md",
+      "title": "IBM Carbon \u2014 enterprise task patterns",
+      "tags": [
+        "carbon",
+        "patterns"
+      ],
+      "sha256": "ad504154e7578556bb9988c5b9fff92f3a2a51463a12ed8da8e605ea0fe3dad6",
+      "bytes": 4213,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-05-CARBON-04_DATA_VISUALIZATION",
+      "path": "05-CARBON/04-data-visualization.md",
+      "title": "IBM Carbon \u2014 data visualization",
+      "tags": [
+        "carbon",
+        "charts"
+      ],
+      "sha256": "0bb94115105eb3eb22b77f7358f71030b02e15d1f94dfa4ebf9dbd4a628d73d8",
+      "bytes": 4860,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-05-CARBON-05_CONTENT",
+      "path": "05-CARBON/05-content.md",
+      "title": "IBM Carbon \u2014 UI copy and feedback",
+      "tags": [
+        "carbon",
+        "content"
+      ],
+      "sha256": "72a1c55db1e0092c83ce2a8535ecc4052757029e67cf26cd501a2060510cb159",
+      "bytes": 4168,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-06-ATLASSIAN-01_FOUNDATIONS",
+      "path": "06-ATLASSIAN/01-foundations.md",
+      "title": "Atlassian ADS \u2014 foundations",
+      "tags": [
+        "atlassian",
+        "foundations"
+      ],
+      "sha256": "62c4999b8b5fc720864d69ea20e9a533ded80850d8f7d3eb5a02977c5b133c0c",
+      "bytes": 4343,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-06-ATLASSIAN-02_TOKENS",
+      "path": "06-ATLASSIAN/02-tokens.md",
+      "title": "Atlassian ADS \u2014 tokens and visual roles",
+      "tags": [
+        "atlassian",
+        "tokens"
+      ],
+      "sha256": "10feb6288cf1a9ea5b25b9c97984ac263c1f1a3a76f2cbcf826d3cd93a4a0e86",
+      "bytes": 4332,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-06-ATLASSIAN-03_COMPONENTS",
+      "path": "06-ATLASSIAN/03-components.md",
+      "title": "Atlassian ADS \u2014 components",
+      "tags": [
+        "atlassian",
+        "components"
+      ],
+      "sha256": "03d0110202d86e3cd6f72a587a01bc6c05b9b1460186771f4ef52050c25a1cf2",
+      "bytes": 4253,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-06-ATLASSIAN-04_WORK_PATTERNS",
+      "path": "06-ATLASSIAN/04-work-patterns.md",
+      "title": "Atlassian ADS \u2014 work-management patterns",
+      "tags": [
+        "atlassian",
+        "patterns"
+      ],
+      "sha256": "81ad082fbc442b77fc7ded932ffad4ab53d1e4004ddcefc603fc495c13e4fd8b",
+      "bytes": 4263,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-06-ATLASSIAN-05_CONTENT",
+      "path": "06-ATLASSIAN/05-content.md",
+      "title": "Atlassian ADS \u2014 collaborative content",
+      "tags": [
+        "atlassian",
+        "content"
+      ],
+      "sha256": "aec25c7fa813fa612d28b7878048db1b5d64ce3c033be0a74e453f6f491c691f",
+      "bytes": 4219,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-01_FITTS_LAW",
+      "path": "07-COGNITIVE/01-fitts-law.md",
+      "title": "Fitts\u2019s Law \u2014 movement and target acquisition",
+      "tags": [
+        "fitts",
+        "interaction"
+      ],
+      "sha256": "44144c505968c2fef4c0059d6ef6e041ee28a6452985f5bb95ba86ccb6b5b0b7",
+      "bytes": 4175,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-02_HICKS_LAW",
+      "path": "07-COGNITIVE/02-hicks-law.md",
+      "title": "Hick\u2013Hyman Law \u2014 choices and decision complexity",
+      "tags": [
+        "hicks",
+        "choices"
+      ],
+      "sha256": "a95122087aa34b7d322f88836e8b07f402f1d090788635ecd9354b168adf485a",
+      "bytes": 3985,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-03_JAKOBS_LAW",
+      "path": "07-COGNITIVE/03-jakobs-law.md",
+      "title": "Jakob\u2019s Law \u2014 transfer of expectations",
+      "tags": [
+        "jakob",
+        "mental-models"
+      ],
+      "sha256": "3a7f1a800fb603500cea4f5a68b4cf5186ce301bc8300f1d0879b63084c87dd7",
+      "bytes": 3905,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-04_GESTALT",
+      "path": "07-COGNITIVE/04-gestalt.md",
+      "title": "Gestalt principles \u2014 perceptual grouping",
+      "tags": [
+        "gestalt",
+        "grouping"
+      ],
+      "sha256": "d6d2108b4c1e85b4bbe9da541b2c8d160f8ac566d3d052cdd592a91615f8e33c",
+      "bytes": 4001,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-05_WORKING_MEMORY",
+      "path": "07-COGNITIVE/05-working-memory.md",
+      "title": "Working memory and cognitive load",
+      "tags": [
+        "cognition",
+        "memory"
+      ],
+      "sha256": "737145d4ed3f08fc788e183fb855dcb91f993f102f75200aedffc86807ba265e",
+      "bytes": 3903,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-07-COGNITIVE-06_FEEDBACK",
+      "path": "07-COGNITIVE/06-feedback.md",
+      "title": "Feedback loops and perceived control",
+      "tags": [
+        "feedback",
+        "async"
+      ],
+      "sha256": "4831a8b890f8ee71fcd7f3760aecddadb37f6ebb16014f95099ab858b4f44c7f",
+      "bytes": 3901,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-01_VISUAL_HIERARCHY",
+      "path": "08-COMPOSITION/01-visual-hierarchy.md",
+      "title": "Visual hierarchy \u2014 attention ordering",
+      "tags": [
+        "composition",
+        "hierarchy"
+      ],
+      "sha256": "331c7f65939618a49626c08698885838a606cfa6b02b2f995f083b32d185114d",
+      "bytes": 4031,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-02_GRID_LAYOUT",
+      "path": "08-COMPOSITION/02-grid-layout.md",
+      "title": "Grids, alignment and responsive structure",
+      "tags": [
+        "grid",
+        "layout"
+      ],
+      "sha256": "80fe385b3a5ffffa05ee3aa6a7efaf42fe6139260b98eae489e79d000e6e7a82",
+      "bytes": 3937,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-03_SPACING_DENSITY",
+      "path": "08-COMPOSITION/03-spacing-density.md",
+      "title": "Spacing, rhythm and information density",
+      "tags": [
+        "spacing",
+        "density"
+      ],
+      "sha256": "68373bcaeb5a9a2635da0c3f13eca2fad0d7d0facd28d8064fb868d4e90841a7",
+      "bytes": 3992,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-04_TYPOGRAPHY",
+      "path": "08-COMPOSITION/04-typography.md",
+      "title": "Typography systems and editorial clarity",
+      "tags": [
+        "typography",
+        "type"
+      ],
+      "sha256": "4604024659d1f03d17e41d521da249f5b3dd4ef7fa78501037089472a467eff6",
+      "bytes": 3971,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-05_COLOR",
+      "path": "08-COMPOSITION/05-color.md",
+      "title": "Color, semantics and contrast",
+      "tags": [
+        "color",
+        "contrast"
+      ],
+      "sha256": "3d1defe241ee16fe1e04062cbf6f2a341f59cb522e9e6fef90795fdd8b1ed4f5",
+      "bytes": 3830,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-06_MOTION",
+      "path": "08-COMPOSITION/06-motion.md",
+      "title": "Motion, transitions and reduced motion",
+      "tags": [
+        "motion",
+        "transitions"
+      ],
+      "sha256": "42c6a34593535731332fb5797e53b2f986c3793c97c383a4cdab5ac9416de3dd",
+      "bytes": 3958,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-08-COMPOSITION-07_ICONOGRAPHY",
+      "path": "08-COMPOSITION/07-iconography.md",
+      "title": "Iconography and control language",
+      "tags": [
+        "icons",
+        "controls"
+      ],
+      "sha256": "14d4cfe4b3963586afb5519c9e7af7dca984e62ffd34cb247039d01e31c63912",
+      "bytes": 3903,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-09-DESIGN-SCHOOLS-01_SWISS_INTERNATIONAL",
+      "path": "09-DESIGN-SCHOOLS/01-swiss-international.md",
+      "title": "Swiss / International Typographic Style",
+      "tags": [
+        "swiss",
+        "editorial"
+      ],
+      "sha256": "04fafe1be5f64e21c851f74bd2b5b4453dbcb1ca445153ca087e84a01929fc14",
+      "bytes": 3816,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-09-DESIGN-SCHOOLS-02_BAUHAUS",
+      "path": "09-DESIGN-SCHOOLS/02-bauhaus.md",
+      "title": "Bauhaus \u2014 form and function",
+      "tags": [
+        "bauhaus",
+        "function"
+      ],
+      "sha256": "89315e770de01a68f683819eccafb1f7945e29a40bf1efc29d60e48b9c89a14d",
+      "bytes": 3665,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-09-DESIGN-SCHOOLS-03_MODERNISM",
+      "path": "09-DESIGN-SCHOOLS/03-modernism.md",
+      "title": "Modernist restraint \u2014 function and clarity",
+      "tags": [
+        "modernism",
+        "minimalism"
+      ],
+      "sha256": "5b128e73330f28de2da94b26e2407a9d14da8ac36bd3e80a01744ff61101c619",
+      "bytes": 3725,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-09-DESIGN-SCHOOLS-04_RAMS",
+      "path": "09-DESIGN-SCHOOLS/04-rams.md",
+      "title": "Dieter Rams \u2014 ten-principle-inspired review",
+      "tags": [
+        "rams",
+        "critique"
+      ],
+      "sha256": "d38c47869f3c2591ae09d4813f3bddb955de9ae7bfdb51ab0f0df8bbd1d85893",
+      "bytes": 3795,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-09-DESIGN-SCHOOLS-05_CRAP",
+      "path": "09-DESIGN-SCHOOLS/05-crap.md",
+      "title": "CRAP / CARP \u2014 contrast, repetition, alignment, proximity",
+      "tags": [
+        "crap",
+        "composition"
+      ],
+      "sha256": "2530b738798f1d44dbbec4655dd89ac7ee523c42fa834236e78d191fde2a88ba",
+      "bytes": 3720,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-01-ACCESSIBILITY-GATE",
+      "path": "10-QUALITY/01-accessibility-gate.md",
+      "title": "Accessibility gate \u2014 original functional review",
+      "tags": [],
+      "sha256": "ac4f0d7713e8ade1ce80458668fe56c148c86a4de48d2141c9778070f0f0c88e",
+      "bytes": 1357,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-02-SCREEN-REVIEW",
+      "path": "10-QUALITY/02-screen-review.md",
+      "title": "Multi-pass designer-grade screen review",
+      "tags": [],
+      "sha256": "9ad0e6dc5eb0d83714904db13d6dce6669ae62ebd9bf5c556402c3f585dfa09e",
+      "bytes": 2118,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-03-REVIEW-MODE-COMMENTS",
+      "path": "10-QUALITY/03-review-mode-comments.md",
+      "title": "Review-mode comment contract",
+      "tags": [],
+      "sha256": "583cf7a5fb0b6e8e187f9eae2de2f2f435eefb3e7da40f90a210d8107e2b9758",
+      "bytes": 2133,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-04-DESIGN-BRIEF-TEMPLATE",
+      "path": "10-QUALITY/04-design-brief-template.md",
+      "title": "Compact design brief / task-plan template",
+      "tags": [],
+      "sha256": "77cdcefae4283b99c29376324f1a1b97642869c87f351b2dcee3606a34dba538",
+      "bytes": 809,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-05-AGENT-PLAN-ENFORCEMENT",
+      "path": "10-QUALITY/05-agent-plan-enforcement.md",
+      "title": "Plan \u2192 implement \u2192 audit \u2192 report",
+      "tags": [],
+      "sha256": "7ed6b076512b58f5cf3a27e0ef3c98eba94cd7c68751582609573e663b19be37",
+      "bytes": 1605,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-10-QUALITY-06-EVALUATION-RUBRIC",
+      "path": "10-QUALITY/06-evaluation-rubric.md",
+      "title": "Weighted UI evaluation rubric (Taro-created, not publisher official)",
+      "tags": [],
+      "sha256": "f8d409a27219b8ff3e11f48c1cc9d9a5ab66d076fda1218fe09075cd5684cfff",
+      "bytes": 1094,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-11-EXAMPLES-01-CODING-AGENT-DESKTOP",
+      "path": "11-EXAMPLES/01-coding-agent-desktop.md",
+      "title": "Example \u2014 restrained desktop coding-agent app",
+      "tags": [],
+      "sha256": "f0a7b0843d83bb2f0f5bc88bc71c7dac0469c32362d5e7afb0f82bb0a0b05814",
+      "bytes": 1242,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-11-EXAMPLES-02-ANALYTICS-DASHBOARD",
+      "path": "11-EXAMPLES/02-analytics-dashboard.md",
+      "title": "Example \u2014 enterprise dashboard",
+      "tags": [],
+      "sha256": "2c24dfc5c47a4f6d20dfe5d0e39987c686894ece157e27fe8ef76ff2378ed945",
+      "bytes": 922,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-11-EXAMPLES-03-ANDROID-EXPRESSIVE",
+      "path": "11-EXAMPLES/03-android-expressive.md",
+      "title": "Example \u2014 expressive Android consumer app",
+      "tags": [],
+      "sha256": "801ee9c854fb1d3ed84caee631742af8749dd6336782bdf6c9029898465c8efb",
+      "bytes": 902,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-11-EXAMPLES-04-STANDARDS-REQUEST",
+      "path": "11-EXAMPLES/04-standards-request.md",
+      "title": "Example \u2014 a request mentioning ISO 9241",
+      "tags": [],
+      "sha256": "c284dc5d64110f025be8a5dc10d4751e2ce9ae95fb7c233008f14f40c518689f",
+      "bytes": 840,
+      "source_text_included": false
+    },
+    {
+      "id": "ADI-README",
+      "path": "README.md",
+      "title": "Taro Adaptive Design Intelligence (ADI) \u2014 reference library",
+      "tags": [],
+      "sha256": "6180a8bf514cd8e94210bc36db050db63c04ddb849a0e41cbfda0aa1fd8f6d32",
+      "bytes": 3673,
+      "source_text_included": false
+    }
+  ]
+}
