@@ -35,7 +35,7 @@ export function SegmentScreen({ lang, go }: Props) {
   const floorText =
     state?.floor === 'do_not_travel' ? c.floorDnt
     : state?.floor === 'warning' ? c.floorWarning
-    : official.feedStatus === 'unavailable' ? c.floorUnknown
+    : official.feedStatus !== 'ok' ? c.floorUnknown
     : c.floorNone;
 
   return (
@@ -47,7 +47,7 @@ export function SegmentScreen({ lang, go }: Props) {
 
       <FloodMap
         states={states}
-        feedUnavailable={official.feedStatus === 'unavailable'}
+        feedUnavailable={official.feedStatus !== 'ok'}
         statements={official.statements}
         highlightSegmentId={seg.id}
         height={220}

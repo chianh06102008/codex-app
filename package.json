@@ -9,6 +9,7 @@
     "ios": "expo run:ios",
     "maps-server": "node --env-file=.env server/maps.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --import ./scripts/test-setup.mjs \"src/**/*.test.ts\"",
+    "live": "node scripts/live.mjs",
     "vision-server": "node --env-file-if-exists=.env server/vision.mjs",
     "bulletin-server": "BULLETIN_SERVER_HOST=${BULLETIN_SERVER_HOST:-0.0.0.0} node server/bulletin.mjs"
   },

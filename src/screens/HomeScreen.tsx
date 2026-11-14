@@ -52,7 +52,7 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
       <View style={StyleSheet.absoluteFill}>
         <FloodMap
           states={states}
-          feedUnavailable={official.feedStatus === 'unavailable'}
+          feedUnavailable={official.feedStatus !== 'ok'}
           statements={official.statements}
           height={height}
           cornerRadius={0}

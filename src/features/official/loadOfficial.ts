@@ -8,7 +8,8 @@ import * as Location from 'expo-location';
 
 import { OFFICIAL_REFRESH_MS, PILOT_PROVINCE, RAIN_REFRESH_MS } from '@/config';
 import type { OfficialStatement } from '@/domain/types';
-import { SLICE_REGION } from '@/features/map/roads';
+import { SLICE_REGION, insideSlice } from '@/features/map/roads';
+import { sessionStore, updateSession } from '@/features/routing/session';
 import { syncSharedReports } from '@/features/report/reportStore';
 import { fetchRainAt } from './rain';
 import { officialStore, setOfficialSource } from '@/features/fusion/officialSource';
@@ -69,7 +70,13 @@ async function currentPosition() {
 
 export async function refreshRain(): Promise<void> {
   const here = (await currentPosition()) ?? null;
-  if (here) setOfficialSource({ userLocation: here });
+  if (here) {
+    setOfficialSource({ userLocation: here });
+    // Inside the pilot slice the trip starts where the phone is, unless the user already chose a start.
+    if (insideSlice(here) && sessionStore.get().origin.kind === 'default') {
+      updateSession({ origin: { point: here, label: '', kind: 'gps' } });
+    }
+  }
   // No permission: read rain over the pilot slice instead, and the UI says where it was read.
   const at = here ?? { latitude: SLICE_REGION.latitude, longitude: SLICE_REGION.longitude };
   const rain = await fetchRainAt(at.latitude, at.longitude);

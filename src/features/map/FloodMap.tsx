@@ -1,7 +1,7 @@
 // Map of the pilot slice with segment states, official layer and optional route.
 // The official/uncertain layer has no off switch (PRD T14). On refusal, pass no
 // route: nothing is drawn through blocked roads (P3).
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
 import { Text } from 'react-native-paper';
@@ -12,7 +12,11 @@ const USE_OSM_TILES = Platform.OS !== 'ios';
 // Apple shows its own legal link on iOS; our road overlays are OSM-derived either way.
 const ATTRIBUTION = USE_OSM_TILES ? MAP_TILE_ATTRIBUTION : '© OpenStreetMap contributors';
 import type { LatLon, OfficialStatement, SegmentState } from '@/domain/types';
-import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION } from './roads';
+import { useOfficialSource } from '@/features/fusion/officialSource';
+import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION, distanceM } from './roads';
+
+/** Farther than this from the pilot slice, the map stays on the slice (there is nothing to show there). */
+const FOLLOW_MAX_M = 25_000;
 import { BRAND, STATE_STYLE } from './stateStyle';
 
 export type FloodMapProps = {
@@ -43,6 +47,18 @@ function FloodMapInner({
   height = 300,
   cornerRadius = 20,
 }: FloodMapProps) {
+  // Fly to the phone's GPS fix once it arrives. Maps that show a route keep the route in view.
+  const mapRef = useRef<MapView>(null);
+  const { userLocation } = useOfficialSource();
+  const centered = useRef(false);
+  useEffect(() => {
+    if (centered.current || !userLocation || routes.length > 0) return;
+    const center = { latitude: SLICE_REGION.latitude, longitude: SLICE_REGION.longitude };
+    if (distanceM(userLocation, center) > FOLLOW_MAX_M) return;
+    centered.current = true;
+    mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.018, longitudeDelta: 0.018 }, 900);
+  }, [userLocation, routes.length]);
+
   // Draw only roads with adverse or uncertain evidence; the basemap shows the rest.
   // When the feed is down every road is uncertain: the area tint carries that instead.
   const flagged = useMemo(
@@ -58,6 +74,7 @@ function FloodMapInner({
   return (
     <View style={[styles.wrap, { height, borderRadius: cornerRadius }]}>
       <MapView
+        ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={SLICE_REGION}
         // iOS: Apple Maps, free, no key or developer account (muted so state colors stand out).

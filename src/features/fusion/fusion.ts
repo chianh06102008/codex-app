@@ -84,8 +84,9 @@ export function computeSegmentState(segmentId: string, mode: TravelMode, ctx: Fu
     }
   }
 
-  // 2. Feed down: never keep an all-clear.
-  if (ctx.feedStatus === 'unavailable') {
+  // 2. Feed down or only last-known: never keep an all-clear. Must match the banner, which
+  //    says "degraded" for anything but a confirmed live feed (officialView.summarizeOfficial).
+  if (ctx.feedStatus !== 'ok') {
     state = stricter(state, 'uncertain');
     reasons.push({ kind: 'feed_unavailable', at });
   }

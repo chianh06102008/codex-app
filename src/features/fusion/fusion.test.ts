@@ -32,6 +32,10 @@ describe('fusion', () => {
     expect(computeSegmentState('s1', 'motorbike', ctx()).state).toBe('no_adverse_evidence');
   });
 
+  test('last-known feed with nothing in force -> at least uncertain, like the banner (P10)', () => {
+    expect(computeSegmentState('s1', 'motorbike', ctx({ feedStatus: 'last_known' })).state).toBe('uncertain');
+  });
+
   test('feed unavailable -> at least uncertain (P10)', () => {
     expect(computeSegmentState('s1', 'motorbike', ctx({ feedStatus: 'unavailable' })).state).toBe('uncertain');
   });

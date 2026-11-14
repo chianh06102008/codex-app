@@ -35,6 +35,9 @@ const vi = {
   originHere: 'Vị trí hiện tại',
   originDefault: 'Trung tâm Hải Châu (điểm mẫu)',
   outsidePilot: 'Bạn đang ở ngoài khu vực thí điểm. Dùng điểm mẫu ở trung tâm Hải Châu.',
+  outsideByKm: (km: number) =>
+    `Bạn cách khu thí điểm Hải Châu khoảng ${km} km. Gợi ý đường chỉ có trong Hải Châu; cảnh báo chính thức và mưa vẫn theo vị trí của bạn. Đang dùng điểm mẫu ở trung tâm Hải Châu.`,
+  gpsFailed: 'Chưa lấy được vị trí. Thử lại ngoài trời hoặc chọn điểm đi trên bản đồ.',
   useMyLocation: 'Dùng vị trí của tôi',
   locationWhy: 'FloodScout chỉ dùng vị trí khi bạn đang mở ứng dụng, để đặt điểm xuất phát và ẩn bản đồ khi bạn đang chạy xe.',
   destination: 'Điểm đến',
@@ -163,6 +166,9 @@ const en: Copy = {
   originHere: 'Current location',
   originDefault: 'Central Hải Châu (sample point)',
   outsidePilot: 'You are outside the pilot area. Using a sample point in central Hải Châu.',
+  outsideByKm: (km: number) =>
+    `You are about ${km} km from the Hải Châu pilot area. Route suggestions exist only inside Hải Châu; official warnings and rain still use your location. Using a sample point in central Hải Châu.`,
+  gpsFailed: 'Could not get your location. Try again outdoors or pick a start on the map.',
   useMyLocation: 'Use my location',
   locationWhy: 'FloodScout uses your location only while the app is open, to set the starting point and hide the map while you ride.',
   destination: 'Destination',

@@ -1,5 +1,7 @@
 # Map, routing, report & vision (Dev 3 + Dev 4)
 
+**Fastest start:** `npm run live` starts the vision/report server (8789) and the NCHMF bulletin server (8788) together and prints the `.env` lines for your phone. Then `npx expo start`.
+
 Branch: `feat/map-report` (Dev 3 and Dev 4 are one person, so the two areas share one branch).
 
 ## Run it on your phone (Expo Go)

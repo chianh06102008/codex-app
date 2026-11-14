@@ -56,7 +56,7 @@ export function runRouteCheck(): RouteResult | null {
     mode: s.mode,
     states,
     statements: official.statements,
-    feedUnavailable: official.feedStatus === 'unavailable',
+    feedUnavailable: official.feedStatus !== 'ok',
     originSegmentId: snapToRoad(s.origin.point, SNAP_MAX_M)?.segment.id ?? null,
     destinationSegmentId: snapToRoad(s.destination.point, SNAP_MAX_M)?.segment.id ?? null,
   });

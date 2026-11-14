@@ -11,7 +11,7 @@ import { useOfficialSource } from '@/features/fusion/officialSource';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
 import { Legend } from '@/features/map/StateChip';
-import { NAMED_ROADS, insideSlice, snapToRoad } from '@/features/map/roads';
+import { NAMED_ROADS, SLICE_REGION, distanceM, insideSlice, snapToRoad } from '@/features/map/roads';
 import { BRAND } from '@/features/map/stateStyle';
 import { runRouteCheck, updateSession, useRouteSession } from '@/features/routing/session';
 import { SpeedGate } from '@/features/speed-gate/SpeedGate';
@@ -47,10 +47,11 @@ export function AskScreen({ lang, go }: Props) {
         updateSession({ origin: { point: p, label: c.originHere, kind: 'gps' } });
         setNote('');
       } else {
-        setNote(c.outsidePilot);
+        const km = Math.round(distanceM(p, { latitude: SLICE_REGION.latitude, longitude: SLICE_REGION.longitude }) / 100) / 10;
+        setNote(c.outsideByKm(km));
       }
     } catch {
-      setNote(c.outsidePilot);
+      setNote(c.gpsFailed);
     }
   }
 
@@ -93,7 +94,7 @@ export function AskScreen({ lang, go }: Props) {
 
         <FloodMap
           states={states}
-          feedUnavailable={official.feedStatus === 'unavailable'}
+          feedUnavailable={official.feedStatus !== 'ok'}
           statements={official.statements}
           origin={session.origin.point}
           destination={session.destination?.point}

@@ -211,7 +211,7 @@ export function ReportScreen({ lang, go }: Props) {
             <Text style={styles.soft}>{c.confirmRoadHint}</Text>
             <FloodMap
               states={states}
-              feedUnavailable={official.feedStatus === 'unavailable'}
+              feedUnavailable={official.feedStatus !== 'ok'}
               statements={official.statements}
               highlightSegmentId={draft.segmentId}
               onPress={(p) => {

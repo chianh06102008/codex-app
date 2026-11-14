@@ -88,7 +88,7 @@ export function ResultScreen({ lang, go }: Props) {
 
         <FloodMap
           states={states}
-          feedUnavailable={official.feedStatus === 'unavailable'}
+          feedUnavailable={official.feedStatus !== 'ok'}
           statements={official.statements}
           routes={refusal ? [] : [option!.geometry, ...result.options.filter((o) => o !== option).map((o) => o.geometry)]}
           origin={session.origin.point}
