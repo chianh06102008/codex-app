@@ -1,10 +1,1 @@
-{
-  "description": "A web application that presents the requested screens, giving users a clear, focused interface for its intended tasks.",
-  "robots": {
-    "index": false
-  },
-  "accessibility": {
-    "addBypassLinks": false,
-    "ignoreReducedMotion": false
-  }
-}
+{}

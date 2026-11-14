@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@font-face {
+  font-family: 'Plus Jakarta Sans:Regular';
+  src: url('https://static.figma.com/font/PlusJakartaSans_wght__2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans:SemiBold';
+  src: url('https://static.figma.com/font/PlusJakartaSans_wght__2') format('woff2');
+  font-style: normal;
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans:Bold';
+  src: url('https://static.figma.com/font/PlusJakartaSans_wght__2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans:ExtraBold';
+  src: url('https://static.figma.com/font/PlusJakartaSans_wght__2') format('woff2');
+  font-style: normal;
+  font-weight: 800;
+}
+
+@layer base {
+  html {
+    background-color: #f3f4ef;
+    color: #191b14;
+    font-family: 'Plus Jakarta Sans:Regular', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: #f3f4ef;
+    color: #191b14;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.maplibregl-ctrl-attrib {
+  font-family: 'Plus Jakarta Sans:Regular', system-ui, sans-serif !important;
+  font-size: 11px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(4px);
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+  margin: 4px 8px !important;
+}
+
+.maplibregl-popup-content {
+  font-family: 'Plus Jakarta Sans:Regular', system-ui, sans-serif !important;
+  border-radius: 18px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 8px 24px rgba(26, 28, 20, 0.18) !important;
+}
+
+.figma-custom-code-fragment {
+  display: contents;
+}
+
+.figma-bypass-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 2147483647;
+  transform: translateY(-150%);
+  border-radius: 6px;
+  background: #111827;
+  color: #fff;
+  padding: 8px 12px;
+  font:
+    600 14px/1.2 system-ui,
+    sans-serif;
+  text-decoration: none;
+}
+
+.figma-bypass-link:focus {
+  transform: translateY(0);
+}
