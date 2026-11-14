@@ -7,6 +7,10 @@ import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 
 import { Text } from 'react-native-paper';
 
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from '@/config';
+
+const USE_OSM_TILES = Platform.OS !== 'ios';
+// Apple shows its own legal link on iOS; our road overlays are OSM-derived either way.
+const ATTRIBUTION = USE_OSM_TILES ? MAP_TILE_ATTRIBUTION : '© OpenStreetMap contributors';
 import type { LatLon, OfficialStatement, SegmentState } from '@/domain/types';
 import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION } from './roads';
 import { BRAND, STATE_STYLE } from './stateStyle';
@@ -53,8 +57,9 @@ function FloodMapInner({
       <MapView
         style={StyleSheet.absoluteFill}
         initialRegion={SLICE_REGION}
-        // OSM tiles replace the platform basemap: no Google key, same look on iOS and Android.
-        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+        // iOS: Apple Maps, free, no key or developer account (muted so state colors stand out).
+        // Android: the native map is Google, so OSM tiles replace it (no Google key needed).
+        mapType={USE_OSM_TILES ? 'none' : 'mutedStandard'}
         minZoomLevel={12}
         maxZoomLevel={19}
         onPress={onPress ? (e: MapPressEvent) => onPress(e.nativeEvent.coordinate) : undefined}
@@ -65,7 +70,9 @@ function FloodMapInner({
         pitchEnabled={false}
         accessibilityLabel="Bản đồ khu vực thí điểm"
       >
-        <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={19} shouldReplaceMapContent zIndex={-1} tileCacheMaxAge={7 * 24 * 3600} />
+        {USE_OSM_TILES && (
+          <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={19} shouldReplaceMapContent zIndex={-1} tileCacheMaxAge={7 * 24 * 3600} />
+        )}
         {feedUnavailable && (
           <Polygon
             coordinates={SLICE_POLYGON}
@@ -125,7 +132,7 @@ function FloodMapInner({
         {destination && <Marker coordinate={destination} pinColor="#7A1F5C" title="B" />}
       </MapView>
       <View style={styles.attribution} pointerEvents="none">
-        <Text style={styles.attributionText}>{MAP_TILE_ATTRIBUTION}</Text>
+        <Text style={styles.attributionText}>{ATTRIBUTION}</Text>
       </View>
     </View>
   );

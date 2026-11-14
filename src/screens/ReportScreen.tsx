@@ -18,6 +18,7 @@ import { BRAND, STATE_STYLE } from '@/features/map/stateStyle';
 import { type ReportDraft, clearDraft, emptyDraft, loadDraft, saveDraft } from '@/features/report/draft';
 import { redactPhoto } from '@/features/report/redact';
 import { addReport } from '@/features/report/reportStore';
+import { allowedCategories, canPublish, restoreDraft } from '@/features/report/rules';
 import { analyzePhoto } from '@/features/report/vision';
 import { updateSession } from '@/features/routing/session';
 import { SpeedGate } from '@/features/speed-gate/SpeedGate';
@@ -45,9 +46,9 @@ export function ReportScreen({ lang, go }: Props) {
 
   useEffect(() => {
     loadDraft().then((d) => {
-      if (d && d.step > 1 && d.step < 5) {
-        // A vision call cannot survive a restart: treat it as unavailable.
-        setDraft({ ...d, vision: d.vision ?? { ok: false, reason: 'error' } });
+      const r = restoreDraft(d);
+      if (r) {
+        setDraft(r);
         setRestored(true);
       }
       loaded.current = true;
@@ -104,7 +105,7 @@ export function ReportScreen({ lang, go }: Props) {
   }
 
   async function publish() {
-    if (!draft.category || !draft.segmentId || !draft.point) return;
+    if (!canPublish(draft, busy === 'vision') || !draft.category || !draft.segmentId || !draft.point) return;
     const v = draft.vision?.ok ? draft.vision : null;
     const report: Report = {
       id: `local-${Date.now()}`,
@@ -139,7 +140,6 @@ export function ReportScreen({ lang, go }: Props) {
     setRestored(false);
   }
 
-  const visionDown = draft.vision !== null && !draft.vision.ok;
   const seg = draft.segmentId ? SEGMENT_BY_ID.get(draft.segmentId) : null;
 
   return (
@@ -253,7 +253,7 @@ export function ReportScreen({ lang, go }: Props) {
 
             <View style={styles.cats}>
               {CATS.map(({ key, icon }) => {
-                const disabled = (visionDown || busy === 'vision') && key !== 'unknown';
+                const disabled = !allowedCategories(draft.vision, busy === 'vision').includes(key);
                 const selected = draft.category === key;
                 return (
                   <Pressable
@@ -282,7 +282,7 @@ export function ReportScreen({ lang, go }: Props) {
               <Switch value={draft.obstruction} onValueChange={(v) => update({ obstruction: v })} color={BRAND.primary} />
             </View>
 
-            <Button mode="contained" icon="send" disabled={!draft.category} onPress={publish} contentStyle={styles.cta} labelStyle={styles.ctaLabel}>
+            <Button mode="contained" icon="send" disabled={!canPublish(draft, busy === 'vision')} onPress={publish} contentStyle={styles.cta} labelStyle={styles.ctaLabel}>
               {c.publish}
             </Button>
             <Button mode="text" onPress={() => update({ step: 3 })}>{c.change}</Button>

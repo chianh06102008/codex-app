@@ -4,8 +4,10 @@
 import * as Location from 'expo-location';
 import { useEffect } from 'react';
 
-import { SPEED_GATE_KMH } from '@/config';
 import { createStore, useStore } from '@/lib/store';
+import { kmhFromGps } from './speedRules';
+
+export { isMoving } from './speedRules';
 
 type SpeedState = {
   kmh: number | null;
@@ -17,11 +19,6 @@ export const speedStore = createStore<SpeedState>({ kmh: null, simulatedKmh: nul
 
 export function useSpeed() {
   return useStore(speedStore);
-}
-
-export function isMoving(s: SpeedState): boolean {
-  const kmh = s.simulatedKmh ?? s.kmh;
-  return kmh !== null && kmh > SPEED_GATE_KMH;
 }
 
 export function simulateSpeed(kmh: number | null) {
@@ -51,8 +48,7 @@ export function useSpeedWatcher() {
     Location.watchPositionAsync(
       { accuracy: Location.Accuracy.Balanced, timeInterval: 2000, distanceInterval: 5 },
       (pos) => {
-        const mps = pos.coords.speed;
-        speedStore.set((s) => ({ ...s, kmh: mps !== null && mps >= 0 ? mps * 3.6 : null }));
+        speedStore.set((s) => ({ ...s, kmh: kmhFromGps(pos.coords.speed) }));
       },
     )
       .then((s) => {

@@ -25,7 +25,9 @@ Rules to paste into every task:
 
 ## ChatGPT (best for code, tests and text review)
 
-### C1 — UI tests for the report flow and speed gate (T04, T07, T08)
+### C1 — UI tests for the report flow and speed gate (T04, T07, T08) — ✅ done by Claude
+Done as pure-rule tests (`src/features/report/rules.test.ts`, `src/features/speed-gate/speedRules.test.ts`); the screens use the same rules. Render-level tests with `@testing-library/react-native` can follow once Dev 1 adds jest-expo.
+
 - **Files:** `src/screens/__tests__/ReportScreen.test.tsx`, `src/features/speed-gate/__tests__/SpeedGate.test.tsx` (new).
 - Install the test helper with `npx expo install @testing-library/react-native` (mention it in the PR).
 - T04: the "Send report" button is disabled until a category is tapped, and when vision is unavailable only "Unknown" is enabled.
@@ -33,12 +35,15 @@ Rules to paste into every task:
 - T07: `simulateSpeed(25)` replaces the children with "Dừng xe trước khi xem tiếp."; `simulateSpeed(null)` shows them again.
 - Mock `expo-image-picker`, `expo-location` and `react-native-maps`.
 
-### C2 — Vietnamese copy review (PRD §18)
+### C2 — Vietnamese copy review (PRD §18) — ✅ done by Claude, see `docs/copy-review.md`
+
 - **Files:** `docs/copy-review.md` (new) only.
 - Review every string in `src/copy/mapReport.ts` for natural Vietnamese, the same meaning as the English, and the §18 rules, at large text sizes (does it fit on a 360 px button?).
 - Output a table: key, current text, suggested text, reason. Don't edit `mapReport.ts`; I'll apply the changes.
 
-### C3 — Self-hosted router spike (PRD §11.1, stretch)
+### C3 — Self-hosted router spike (PRD §11.1, stretch) — ⏸ skipped on purpose
+The on-phone router already meets §11 and is tested on the real Hải Châu graph. A Docker OSRM/GraphHopper setup means several GB of downloads and can't be tested before the demo. Revisit after the hackathon (GraphHopper custom models can take per-request area penalties).
+
 - **Files:** `server/router/` (new) only.
 - Make a `docker-compose.yml` that runs OSRM or GraphHopper on a Da Nang `.osm.pbf` extract with a custom cost that can take per-way penalties, plus a README with the exact commands.
 - Endpoint target: `POST /route {from, to, mode, penalties: {wayId: multiplier}, blocked: [wayId]}` → GeoJSON. It must **never** return a path through `blocked`. On-phone routing stays as the fallback, so this is a stretch goal only.

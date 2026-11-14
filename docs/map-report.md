@@ -32,7 +32,8 @@ Restart `npx expo start` after changing `.env`. Without a vision server, the rep
 
 | Need | Source | Key? | Notes |
 |---|---|---|---|
-| Basemap tiles | **CARTO Positron**, rendered from OpenStreetMap (`MAP_TILE_URL` in `src/config.ts`) | No | Free for low-volume/non-commercial use with attribution (shown on the map). Replaces Apple/Google tiles on both platforms. |
+| Basemap, iPhone | **Apple Maps** (native, through react-native-maps) | No | Free. No key and no Apple Developer account needed, in Expo Go or a release build. Muted style. |
+| Basemap, Android | **CARTO Positron**, rendered from OpenStreetMap (`MAP_TILE_URL` in `src/config.ts`) | No | Replaces the Google basemap, so no Google key. Free for low-volume/non-commercial use with attribution (shown on the map). |
 | Roads for routing | **OpenStreetMap** via Overpass, bundled in the app | No | Works offline. The safety-critical path never depends on a tile server (PRD §11). |
 | Place search | **Photon** (komoot), an OSM geocoder (`src/features/map/geocode.ts`) | No | Fair use: searches only on tap. Vietnamese names work ("Chợ Hàn"). |
 | Rain context (Dev 2) | **Open-Meteo** forecast API | No | Free, no key, hourly precipitation. Label it as a model (PRD §14). |
@@ -40,7 +41,7 @@ Restart `npx expo start` after changing `.env`. Without a vision server, the rep
 | Official warnings (Dev 2) | **NCHMF** (nchmf.gov.vn), **VNDMS** (vndms.dmc.gov.vn) | No | The only sources that may set a floor. |
 | Production upgrade | **OpenFreeMap** vector tiles + **MapLibre** | No | Free, no limits, nicer and offline-cacheable, but needs a development build (it won't run in Expo Go). |
 
-The Google/Apple keys in `.env.example` are now optional; the app doesn't need them.
+The Google/Apple keys in `.env.example` are now optional; the app doesn't need them. An **Apple Developer account** ($99/year) is only needed for the Apple Maps *Server* API (`server/maps.mjs`, place search) or MapKit JS. Photon already covers place search for free, and Apple Maps can't be used on Android.
 
 ## What is real and what is sample data
 
