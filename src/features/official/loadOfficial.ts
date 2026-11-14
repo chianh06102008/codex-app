@@ -12,6 +12,7 @@ import { SLICE_REGION, insideSlice } from '@/features/map/roads';
 import { sessionStore, updateSession } from '@/features/routing/session';
 import { syncSharedReports } from '@/features/report/reportStore';
 import { fetchRainAt } from './rain';
+import { fetchNchmfDirect } from './nchmfDirect';
 import { updateLivePosition } from '@/features/live/liveStore';
 import { provinceFor, startVietnam, statementsFor } from '@/features/live/vietnam';
 import { officialStore, setOfficialSource } from '@/features/fusion/officialSource';
@@ -64,9 +65,30 @@ export function loadPinnedBulletin() {
 let retry: ReturnType<typeof setTimeout> | null = null;
 
 export async function refreshOfficial(): Promise<boolean> {
-  const base = process.env.EXPO_PUBLIC_BULLETIN_SERVER_URL;
-  if (!base) return false;
   if (retry) clearTimeout(retry);
+  // 1. Straight from nchmf.gov.vn on the phone: works on mobile data, no laptop needed.
+  try {
+    const { statements, complete } = await fetchNchmfDirect(24);
+    const read = statements.filter((s) => s.issuer);
+    raw = {
+      statements: read,
+      feedStatus: complete && read.length === statements.length ? 'ok' : 'last_known',
+      retrievedAt: new Date().toISOString(),
+    };
+    applyOfficial();
+    return true;
+  } catch {
+    // fall through to the laptop server
+  }
+  return refreshOfficialViaServer();
+}
+
+async function refreshOfficialViaServer(): Promise<boolean> {
+  const base = process.env.EXPO_PUBLIC_BULLETIN_SERVER_URL;
+  if (!base) {
+    retry = setTimeout(() => void refreshOfficial(), 30000);
+    return false;
+  }
   try {
     // The server reads each NCHMF page on a cold cache: allow a full minute.
     const res = await fetch(`${base.replace(/\/$/, '')}/api/official/recent?hours=24`, { signal: timeoutSignal(60000) });

@@ -14,6 +14,7 @@ import { DemoPanel } from '@/features/demo/DemoPanel';
 import { useOfficialSource } from '@/features/fusion/officialSource';
 import { NearYou } from '@/features/near/NearYou';
 import { LiveOverlays } from '@/features/live/LiveOverlays';
+import { LayerToggles } from '@/features/live/LayerToggles';
 import { LIVE } from '@/copy/live';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
@@ -43,6 +44,7 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 
   const [layersOpen, setLayersOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(true);
+  const [bandOpen, setBandOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState<SegmentStateKey | null>(null);
   const openLegend = LEGEND.find((l) => l.state === legendOpen);
 
@@ -85,7 +87,22 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
           </Pressable>
         </View>
 
-        <OfficialStatusBand lang={lang} titleLines={2} onPress={() => go('warning')} />
+        {bandOpen ? (
+          <View>
+            <OfficialStatusBand lang={lang} titleLines={2} onPress={() => go('warning')} />
+            <Pressable onPress={() => setBandOpen(false)} accessibilityRole="button" accessibilityLabel={mr.band_hide} hitSlop={10} style={styles.bandClose}>
+              <Icon source="chevron-up" size={20} color={COLORS.ink} />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={() => setBandOpen(true)} accessibilityRole="button" style={[styles.bandPill, view.tone === 'warning' && styles.bandPillWarn]}>
+            <Icon source={view.tone === 'warning' ? 'alert' : 'information-outline'} size={16} color={view.tone === 'warning' ? COLORS.white : COLORS.ink} />
+            <T t="small" w="semibold" color={view.tone === 'warning' ? COLORS.white : COLORS.ink} numberOfLines={1}>
+              {mr.band_show}
+            </T>
+            <Icon source="chevron-down" size={18} color={view.tone === 'warning' ? COLORS.white : COLORS.ink} />
+          </Pressable>
+        )}
 
         {official.rain && (
           <View style={styles.legendNote} accessibilityLiveRegion="polite">
@@ -219,6 +236,7 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
                 <T t="small" color={COLORS.inkSoft}>{s.officialLayerNote}</T>
               </View>
 
+              <LayerToggles lang={lang} />
               <DemoPanel lang={lang} />
             </ScrollView>
           </Pressable>
@@ -229,6 +247,9 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 }
 
 const styles = StyleSheet.create({
+  bandClose: { position: 'absolute', right: 8, top: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' },
+  bandPill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: COLORS.surface, borderRadius: RADIUS.pill, paddingHorizontal: 12, minHeight: 36, borderWidth: 1, borderColor: COLORS.outline },
+  bandPillWarn: { backgroundColor: COLORS.warningBorder, borderColor: COLORS.warningBorder },
   handleRow: { alignItems: 'center', gap: 4, paddingVertical: 2 },
   handleLabel: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   screen: { flex: 1, backgroundColor: COLORS.mapBackground },

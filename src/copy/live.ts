@@ -6,6 +6,10 @@ type Fn = (...a: never[]) => string;
 const vi = {
   title: 'Tình hình hiện tại',
   nationwide: 'Toàn quốc · trực tiếp',
+  layer_radar: 'Ra-đa mưa (hoạt ảnh)',
+  layer_clouds: 'Mây vệ tinh (hoạt ảnh 2 giờ qua)',
+  layer_population: 'Mật độ dân số',
+  layer_contours: 'Đường đồng mức, địa hình',
   vnTitle: 'Tình hình toàn quốc (34 tỉnh, thành)',
   vnSource: 'Mưa: Open-Meteo tại trung tâm mỗi tỉnh · Cảnh báo: NCHMF · Thiên tai: GDACS',
   vnLine: (now: unknown, today: unknown, tomorrow: unknown) => `Mưa hiện tại ${now} mm/giờ · hôm nay ${today} mm · ngày mai ${tomorrow} mm`,
@@ -129,6 +133,10 @@ const vi = {
 const en: typeof vi = {
   title: 'Live situation',
   nationwide: 'Vietnam · live',
+  layer_radar: 'Rain radar (animated)',
+  layer_clouds: 'Satellite clouds (last 2 h, animated)',
+  layer_population: 'Population density',
+  layer_contours: 'Contours and terrain',
   vnTitle: 'Nationwide situation (34 provinces)',
   vnSource: 'Rain: Open-Meteo at each provincial centre · Warnings: NCHMF · Disasters: GDACS',
   vnLine: (now: unknown, today: unknown, tomorrow: unknown) => `Rain now ${now} mm/h · today ${today} mm · tomorrow ${tomorrow} mm`,

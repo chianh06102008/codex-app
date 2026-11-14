@@ -27,15 +27,21 @@ export type LiveState = {
   errors: Partial<Record<SourceKey, string>>;
   updated: Partial<Record<SourceKey, string>>;
   showRadar: boolean;
+  showClouds: boolean;
+  showPopulation: boolean;
+  showContours: boolean;
 };
 
 export const liveStore = createStore<LiveState>({
   here: null, weather: null, river: null, radar: [], alerts: [], roads: [], roadElevations: [], help: [],
   hereElevation: null, higher: null, loading: {}, errors: {}, updated: {}, showRadar: true,
+  showClouds: true, showPopulation: false, showContours: false,
 });
 
 export const useLive = () => useStore(liveStore);
 export const setShowRadar = (showRadar: boolean) => liveStore.set((s) => ({ ...s, showRadar }));
+export type LayerKey = 'showRadar' | 'showClouds' | 'showPopulation' | 'showContours';
+export const setLayer = (k: LayerKey, on: boolean) => liveStore.set((s) => ({ ...s, [k]: on }));
 
 async function run<T>(key: SourceKey, job: () => Promise<T>, apply: (v: T) => Partial<LiveState>) {
   liveStore.set((s) => ({ ...s, loading: { ...s.loading, [key]: true } }));

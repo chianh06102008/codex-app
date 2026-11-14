@@ -19,6 +19,21 @@ export const SEV_COLOR: Record<Severity, string> = {
   warning: '#C2410C', heavy: '#B91C1C', rain: '#2563EB', quiet: '#64748B', unknown: '#94A3B8',
 };
 
+// Himawari-9 infrared (NASA GIBS): a frame every 10 min, published ~30-40 min late.
+function cloudFrames(n = 8, stepMin = 20): string[] {
+  const out: string[] = [];
+  const t = Date.now() - 50 * 60_000;
+  for (let k = n - 1; k >= 0; k--) {
+    const d = new Date(t - k * stepMin * 60_000);
+    d.setUTCMinutes(Math.floor(d.getUTCMinutes() / 10) * 10, 0, 0);
+    const ts = d.toISOString().replace('.000Z', 'Z');
+    out.push(`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Himawari_AHI_Band13_Clean_Infrared/default/${ts}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`);
+  }
+  return out;
+}
+const POPULATION_URL = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GPW_Population_Density_2020/default/default/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png';
+const CONTOUR_URL = 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
+
 export function LiveOverlays() {
   const live = useLive();
   const s = useLiveSituation();
@@ -34,11 +49,23 @@ export function LiveOverlays() {
     const t = setInterval(() => setI((x) => (x + 1) % (frames.length + 3)), 650);
     return () => clearInterval(t);
   }, [live.showRadar, frames.length]);
+  const [clouds, setClouds] = useState(cloudFrames);
+  const [ci, setCi] = useState(0);
+  useEffect(() => {
+    if (!live.showClouds) return;
+    const t = setInterval(() => setCi((x) => (x + 1) % (clouds.length + 2)), 900);
+    const r = setInterval(() => setClouds(cloudFrames()), 10 * 60_000);
+    return () => { clearInterval(t); clearInterval(r); };
+  }, [live.showClouds, clouds.length]);
+  const cloud = clouds[Math.min(ci, clouds.length - 1)];
   const nowIndex = Math.max(0, frames.findIndex((f) => f.nowcast) - 1);
   const frame = frames.length ? frames[i < frames.length ? i : nowIndex >= 0 ? nowIndex : frames.length - 1] : null;
 
   return (
     <>
+      {live.showContours && <UrlTile urlTemplate={CONTOUR_URL} maximumZ={17} opacity={0.55} zIndex={0} tileCacheMaxAge={7 * 24 * 3600} />}
+      {live.showPopulation && <UrlTile urlTemplate={POPULATION_URL} maximumZ={7} opacity={0.5} zIndex={0} tileCacheMaxAge={30 * 24 * 3600} />}
+      {live.showClouds && cloud && <UrlTile key={cloud} urlTemplate={cloud} maximumZ={6} opacity={0.4} zIndex={1} tileCacheMaxAge={24 * 3600} />}
       {live.showRadar && frame && (
         <UrlTile key={frame.url} urlTemplate={frame.url} maximumZ={12} opacity={0.55} zIndex={1} tileSize={256} />
       )}

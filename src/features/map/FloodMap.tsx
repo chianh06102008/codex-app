@@ -1,7 +1,9 @@
 // Map of the pilot slice with segment states, official layer and optional route.
 // The official/uncertain layer has no off switch (PRD T14). On refusal, pass no
 // route: nothing is drawn through blocked roads (P3).
-import { memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+
+const VIETNAM_REGION = { latitude: 16.0, longitude: 106.3, latitudeDelta: 15, longitudeDelta: 10 };
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
 import { Icon, Text } from 'react-native-paper';
@@ -48,15 +50,23 @@ function FloodMapInner({
   cornerRadius = 20,
   children,
 }: FloodMapProps) {
-  // Fly to the phone's GPS fix once it arrives. Maps that show a route keep the route in view.
+  // Start where the phone is. Until the first fix: all of Vietnam (never a fixed city).
   const mapRef = useRef<MapView>(null);
   const { userLocation } = useOfficialSource();
   const centered = useRef(false);
+  const [ready, setReady] = useState(false);
+  const initial = useRef(
+    userLocation
+      ? { ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 }
+      : routes.length
+        ? SLICE_REGION
+        : VIETNAM_REGION,
+  ).current;
   useEffect(() => {
-    if (centered.current || !userLocation || routes.length > 0) return;
+    if (!ready || centered.current || !userLocation || routes.length > 0) return;
     centered.current = true;
-    mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.018, longitudeDelta: 0.018 }, 900);
-  }, [userLocation, routes.length]);
+    mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 900);
+  }, [ready, userLocation, routes.length]);
 
   // Draw only roads with adverse or uncertain evidence; the basemap shows the rest.
   // When the feed is down every road is uncertain: the area tint carries that instead.
@@ -75,7 +85,8 @@ function FloodMapInner({
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={SLICE_REGION}
+        initialRegion={initial}
+        onMapReady={() => setReady(true)}
         // iOS: Apple Maps, free, no key or developer account (muted so state colors stand out).
         // Android: the native map is Google, so OSM tiles replace it (no Google key needed).
         mapType={USE_OSM_TILES ? 'none' : 'mutedStandard'}

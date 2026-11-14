@@ -27,6 +27,8 @@ const vi = {
   mapAttribution: '© OpenStreetMap contributors (ODbL)',
   pilotArea: 'Khu vực thí điểm: Hải Châu, Đà Nẵng',
   near_title: 'Tại vị trí của bạn',
+  band_hide: 'Ẩn tình trạng chính thức',
+  band_show: 'Tình trạng chính thức',
   near_title_in: (p: unknown) => `Tại vị trí của bạn · ${p}`,
   near_rain: (mm: unknown, pr: unknown) => `Mưa 3 giờ tới: ${mm} mm, khả năng ${pr}% (mô hình Open-Meteo)`,
   near_show_map: 'Xem bản đồ',
@@ -158,6 +160,8 @@ type Copy = typeof vi;
 
 const en: Copy = {
   near_title: 'At your location',
+  band_hide: 'Hide official status',
+  band_show: 'Official status',
   near_title_in: (p: unknown) => `At your location · ${p}`,
   near_rain: (mm: unknown, pr: unknown) => `Rain next 3 h: ${mm} mm, ${pr}% chance (Open-Meteo model)`,
   near_show_map: 'Show map',
