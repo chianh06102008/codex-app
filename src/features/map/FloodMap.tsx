@@ -26,6 +26,8 @@ export type FloodMapProps = {
   onPress?: (p: LatLon) => void;
   onSegmentPress?: (segmentId: string) => void;
   height?: number;
+  /** Corner radius of the map frame. 0 for a full-screen map (S1 Home). */
+  cornerRadius?: number;
 };
 
 function FloodMapInner({
@@ -39,6 +41,7 @@ function FloodMapInner({
   onPress,
   onSegmentPress,
   height = 300,
+  cornerRadius = 20,
 }: FloodMapProps) {
   // Draw only roads with adverse or uncertain evidence; the basemap shows the rest.
   // When the feed is down every road is uncertain: the area tint carries that instead.
@@ -53,7 +56,7 @@ function FloodMapInner({
   const highlight = highlightSegmentId ? SEGMENT_BY_ID.get(highlightSegmentId) : null;
 
   return (
-    <View style={[styles.wrap, { height }]}>
+    <View style={[styles.wrap, { height, borderRadius: cornerRadius }]}>
       <MapView
         style={StyleSheet.absoluteFill}
         initialRegion={SLICE_REGION}
@@ -63,7 +66,7 @@ function FloodMapInner({
         minZoomLevel={12}
         maxZoomLevel={19}
         onPress={onPress ? (e: MapPressEvent) => onPress(e.nativeEvent.coordinate) : undefined}
-        showsPointsOfInterest={false}
+        showsPointsOfInterests={false}
         showsBuildings={false}
         toolbarEnabled={false}
         rotateEnabled={false}

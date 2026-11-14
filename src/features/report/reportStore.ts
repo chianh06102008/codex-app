@@ -95,6 +95,12 @@ export async function retractReport(id: string): Promise<void> {
   await persist();
 }
 
+/** Removes every report made on this phone (S8 "delete my reports"). Samples stay. */
+export async function deleteMyReports(): Promise<void> {
+  reportStore.set((s) => ({ ...s, reports: s.reports.filter((r) => r.sample) }));
+  await persist();
+}
+
 export function setShowSamples(showSamples: boolean) {
   reportStore.set((s) => ({ ...s, showSamples }));
 }

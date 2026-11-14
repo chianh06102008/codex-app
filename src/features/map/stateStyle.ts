@@ -2,6 +2,7 @@
 // re-export here. Rules (PRD §8, R16): no green anywhere; the calmest state is a
 // neutral slate, never a "go" color; uncertain must not look like a quiet road.
 import type { SegmentStateKey } from '@/domain/types';
+import { COLORS } from '@/theme/tokens';
 
 export type StateStyle = { line: string; bg: string; fg: string; width: number; icon: string };
 
@@ -12,16 +13,18 @@ export const STATE_STYLE: Record<SegmentStateKey, StateStyle> = {
   no_adverse_evidence: { line: '#5D7480', bg: '#E9EFF1', fg: '#33454E', width: 3, icon: 'minus-circle-outline' },
 };
 
+// Brand colors now come from the shared design tokens (src/theme, Dev 1's shell palette).
+// Kept under the old names so existing screens need no change.
 export const BRAND = {
-  primary: '#16465C',
-  primarySoft: '#CEE8F0',
-  ink: '#152B36',
-  inkSoft: '#405863',
-  surface: '#FFFFFF',
-  background: '#F3F6F6',
-  warningBand: '#FFEDCE',
-  warningInk: '#5C3B00',
-  route: '#16465C',
-  routeAlt: '#4F8FA8',
-  outline: '#D5DFE1',
+  primary: COLORS.ink,
+  primarySoft: COLORS.surfaceSoft,
+  ink: COLORS.ink,
+  inkSoft: COLORS.inkSoft,
+  surface: COLORS.surface,
+  background: COLORS.background,
+  warningBand: COLORS.warningBand,
+  warningInk: COLORS.warningInk,
+  route: COLORS.ink,
+  routeAlt: COLORS.inkSoft,
+  outline: COLORS.outline,
 };

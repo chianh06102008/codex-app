@@ -1,5 +1,6 @@
-// T02 copy lint (PRD §18). Dev 1: extend SOURCES with strings.ts when it lands.
+// T02 copy lint (PRD §18). Covers every user-visible string file; add new ones to SOURCES.
 import { COPY } from './mapReport';
+import { STRINGS } from './strings';
 
 // Allowed negations, removed before scanning.
 const ALLOWED = [/không phải xác nhận an toàn/gi, /không nên đi/gi, /not a clearance/gi, /not an all-clear/gi];
@@ -19,7 +20,7 @@ function allStrings(obj: Record<string, unknown>): string[] {
   });
 }
 
-const SOURCES = { mapReport: COPY };
+const SOURCES = { mapReport: COPY, strings: STRINGS };
 
 describe('T02 forbidden copy', () => {
   for (const [name, copy] of Object.entries(SOURCES)) {
