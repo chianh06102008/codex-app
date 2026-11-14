@@ -1,0 +1,26 @@
+export const assetPathPrefix = "/assets";
+
+export const ASSETS = {
+  navMap: `${assetPathPrefix}/f34cc.svg`,
+  navAlert: `${assetPathPrefix}/45b14.svg`,
+  navCamera: `${assetPathPrefix}/d66ae.svg`,
+  navSettings: `${assetPathPrefix}/b4d08.svg`,
+  iconMic: `${assetPathPrefix}/d182c.svg`,
+  iconSearch: `${assetPathPrefix}/2c2e1.svg`,
+  iconLocate: `${assetPathPrefix}/50605.svg`,
+  iconLayers: `${assetPathPrefix}/51935.svg`,
+  iconPlus: `${assetPathPrefix}/641a7.svg`,
+  iconMinus: `${assetPathPrefix}/98c7b.svg`,
+  mapYou: `${assetPathPrefix}/16daf.svg`,
+  iconPin: `${assetPathPrefix}/36cb0.svg`,
+  mapBasePilotExtract: `${assetPathPrefix}/99709.svg`,
+  dotAvoid: `${assetPathPrefix}/6290d.svg`,
+  dotCaution: `${assetPathPrefix}/908b4.svg`,
+  dotUnknown: `${assetPathPrefix}/1f0d7.svg`,
+  dotNoAdverse: `${assetPathPrefix}/80a56.svg`,
+  iconChevronLeft: `${assetPathPrefix}/4a2e7.svg`,
+  iconCheck: `${assetPathPrefix}/a960b.svg`,
+  toggleOff: `${assetPathPrefix}/569c8.svg`,
+  toggleOn: `${assetPathPrefix}/c7987.svg`,
+  iconPauseOctagon: `${assetPathPrefix}/13e46.svg`,
+} as const;

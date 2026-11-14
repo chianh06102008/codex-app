@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Plus Jakarta Sans:Regular";
+  src: url("https://static.figma.com/font/PlusJakartaSans_wght__2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans:SemiBold";
+  src: url("https://static.figma.com/font/PlusJakartaSans_wght__2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans:Bold";
+  src: url("https://static.figma.com/font/PlusJakartaSans_wght__2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans:ExtraBold";
+  src: url("https://static.figma.com/font/PlusJakartaSans_wght__2") format("woff2");
+  font-style: normal;
+  font-weight: 800;
+}
+
+@layer base {
+  html {
+    background-color: #f3f4ef;
+    color: #191b14;
+    font-family: "Plus Jakarta Sans:Regular", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: #f3f4ef;
+    color: #191b14;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
