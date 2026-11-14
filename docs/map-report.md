@@ -20,7 +20,7 @@ Branch: `feat/map-report` (Dev 3 and Dev 4 are one person, so the two areas shar
 cp .env.example .env
 ```
 
-In `.env`, set `GEMINI_API_KEY` or `OPENAI_API_KEY` (or leave both empty for a labeled mock), and set `VISION_SERVER_HOST=0.0.0.0` and `EXPO_PUBLIC_VISION_SERVER_URL=http://<your-computer-LAN-IP>:8788`. Then:
+In `.env`, set `GEMINI_API_KEY` or `OPENAI_API_KEY` (or leave both empty for a labeled mock), and set `VISION_SERVER_HOST=0.0.0.0` and `EXPO_PUBLIC_VISION_SERVER_URL=http://<your-computer-LAN-IP>:8789`. Then:
 
 ```bash
 npm run vision-server

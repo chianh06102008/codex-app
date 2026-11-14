@@ -12,7 +12,7 @@
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 
-const port = Number(process.env.VISION_PORT || 8788);
+const port = Number(process.env.VISION_PORT || 8789);
 const host = process.env.VISION_SERVER_HOST || '127.0.0.1';
 const provider =
   process.env.VISION_PROVIDER ||

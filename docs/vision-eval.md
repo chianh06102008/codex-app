@@ -145,7 +145,7 @@ const path = require("node:path");
   for (const row of rows) {
     const [file, expected] = row.split(",");
     const image_base64 = fs.readFileSync(path.join("fixtures/golden", file)).toString("base64");
-    const res = await fetch("http://127.0.0.1:8788/api/vision", {
+    const res = await fetch("http://127.0.0.1:8789/api/vision", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image_base64, mime: "image/jpeg" }),

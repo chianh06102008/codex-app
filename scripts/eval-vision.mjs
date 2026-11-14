@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIR = new URL('../fixtures/golden/', import.meta.url).pathname;
-const SERVER = (process.argv[2] || 'http://127.0.0.1:8788').replace(/\/$/, '');
+const SERVER = (process.argv[2] || 'http://127.0.0.1:8789').replace(/\/$/, '');
 const CATS = ['ankle', 'wheel', 'unknown'];
 
 const rows = readFileSync(join(DIR, 'labels.csv'), 'utf8')
