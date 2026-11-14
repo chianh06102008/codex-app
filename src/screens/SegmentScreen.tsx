@@ -85,7 +85,7 @@ export function SegmentScreen({ lang, go }: Props) {
                 {c.humanSaid}: {c[`cat_${r.human_category}`]}
                 {r.model_category ? ` · ${c.modelSaid}: ${c[`cat_${r.model_category}`]}` : ''}
               </Text>
-              {!r.sample && r.status !== 'retracted' && (
+              {!r.sample && !r.shared && r.status !== 'retracted' && (
                 <Button compact mode="text" icon="undo" onPress={() => retractReport(r.id)}>{c.retract}</Button>
               )}
             </View>

@@ -66,6 +66,8 @@ function FloodMapInner({
         minZoomLevel={12}
         maxZoomLevel={19}
         onPress={onPress ? (e: MapPressEvent) => onPress(e.nativeEvent.coordinate) : undefined}
+        // Real position: the native blue dot (pulses on iOS). Needs location permission.
+        showsUserLocation
         showsPointsOfInterests={false}
         showsBuildings={false}
         toolbarEnabled={false}

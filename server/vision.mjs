@@ -11,6 +11,7 @@
 // Keys never leave this process. Do not log images.
 import http from 'node:http';
 import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const port = Number(process.env.VISION_PORT || 8789);
 const host = process.env.VISION_SERVER_HOST || '127.0.0.1';
@@ -161,10 +162,72 @@ function readBody(req) {
   });
 }
 
+// ---------- Shared crowd reports (PRD §9 Report) ----------
+// Phones on the same network share reports through this server, so a report made on one
+// phone changes road states on every phone. Stored as a JSON file next to the server.
+// No photo ever leaves the phone: only the category, the snapped road and the times.
+const REPORTS_DIR = new URL('./data/', import.meta.url);
+const REPORTS_FILE = new URL('./data/reports.json', import.meta.url);
+const REPORT_TTL_MS = 12 * 3600 * 1000; // P5
+const CATS = new Set(['ankle', 'wheel', 'unknown']);
+let reports = [];
+try { reports = JSON.parse(readFileSync(REPORTS_FILE, 'utf8')); } catch { reports = []; }
+function saveReports() {
+  try { mkdirSync(REPORTS_DIR, { recursive: true }); writeFileSync(REPORTS_FILE, JSON.stringify(reports)); } catch (e) { console.error('save reports', e.message); }
+}
+const REPORT_KEYS = ['id', 'created_at', 'segment_id', 'lat', 'lon', 'accuracy_m', 'model_category', 'model_confidence',
+  'model_reference_objects', 'human_category', 'water_visible', 'obstruction', 'vehicle_context', 'no_water', 'reporter_trust',
+  'perceptual_hash', 'status', 'retracted_at'];
+/** Keeps only known fields; rejects anything outside the 3-category contract (P4). */
+function cleanReport(r) {
+  if (!r || typeof r !== 'object') return null;
+  if (typeof r.id !== 'string' || typeof r.segment_id !== 'string') return null;
+  if (!CATS.has(r.human_category)) return null;
+  if (r.model_category != null && !CATS.has(r.model_category)) return null;
+  if (!Number.isFinite(r.lat) || !Number.isFinite(r.lon)) return null;
+  if (Number.isNaN(Date.parse(r.created_at))) return null;
+  const out = Object.fromEntries(REPORT_KEYS.map((k) => [k, r[k] ?? null]));
+  out.model_reference_objects = Array.isArray(r.model_reference_objects) ? r.model_reference_objects.filter((x) => typeof x === 'string') : [];
+  out.water_visible = r.water_visible === true;
+  out.no_water = r.no_water === true;
+  out.status = r.status === 'retracted' ? 'retracted' : 'active';
+  out.obstruction = ['debris', 'landslide'].includes(r.obstruction) ? r.obstruction : 'none';
+  out.reporter_trust = r.reporter_trust === 'low' ? 'low' : 'normal';
+  out.server_received_at = new Date().toISOString();
+  return out;
+}
+function liveReports() {
+  const cutoff = Date.now() - REPORT_TTL_MS;
+  reports = reports.filter((r) => Date.parse(r.created_at) >= cutoff);
+  return reports;
+}
+
 http
   .createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const url = new URL(req.url || '/', 'http://localhost');
+    if (url.pathname === '/api/reports' && req.method === 'GET') {
+      res.writeHead(200).end(JSON.stringify({ retrieved_at: new Date().toISOString(), reports: liveReports() }));
+      return;
+    }
+    if (url.pathname === '/api/reports' && req.method === 'POST') {
+      let report = null;
+      try { report = cleanReport(JSON.parse(await readBody(req))); } catch { report = null; }
+      if (!report) { res.writeHead(400).end(JSON.stringify({ error: 'Invalid report' })); return; }
+      reports = [...liveReports().filter((r) => r.id !== report.id), report];
+      saveReports();
+      res.writeHead(201).end(JSON.stringify(report));
+      return;
+    }
+    const retract = url.pathname.match(/^\/api\/reports\/([^/]+)\/retract$/);
+    if (retract && req.method === 'POST') {
+      const id = decodeURIComponent(retract[1]);
+      const now = new Date().toISOString();
+      reports = reports.map((r) => (r.id === id ? { ...r, status: 'retracted', retracted_at: now } : r));
+      saveReports();
+      res.writeHead(200).end(JSON.stringify({ ok: true }));
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/health') {
       res.writeHead(200).end(JSON.stringify({ ok: true, provider }));
       return;

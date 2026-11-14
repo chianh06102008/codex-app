@@ -81,6 +81,20 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 
         <OfficialStatusBand lang={lang} titleLines={2} onPress={() => go('warning')} />
 
+        {official.rain && (
+          <View style={styles.legendNote} accessibilityLiveRegion="polite">
+            <T t="small">
+              {mr.rainLine(
+                official.rain.next3hMm,
+                official.rain.maxProbability,
+                official.userLocation !== null,
+                new Date(official.rain.retrievedAt).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' }),
+              )}
+            </T>
+            {official.rain.heavy && <T t="small" w="semibold">{mr.rainHeavy}</T>}
+          </View>
+        )}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

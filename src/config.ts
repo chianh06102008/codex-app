@@ -37,3 +37,10 @@ export const MAP_TILE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO';
 export const GEOCODER_URL = 'https://photon.komoot.io/api/';
 /** Typical urban speeds, used only to tie-break and for an optional secondary duration. */
 export const SPEED_KMH: Record<'motorbike' | 'walk' | 'car', number> = { motorbike: 22, walk: 4.5, car: 18 };
+
+// Rain context (Open-Meteo model, never a floor). "Heavy" speeds up report decay only.
+export const RAIN_HEAVY_MM_PER_H = 7.6; // WMO/AMS heavy-rain rate
+export const RAIN_REFRESH_MS = 10 * 60 * 1000;
+export const OFFICIAL_REFRESH_MS = 10 * 60 * 1000;
+/** Bulletins are national; only those naming the pilot province can set its floor. */
+export const PILOT_PROVINCE = 'Đà Nẵng';

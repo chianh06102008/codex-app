@@ -12,7 +12,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { loadReports } from '@/features/report/reportStore';
-import { loadPinnedBulletin, refreshOfficial } from '@/features/official/loadOfficial';
+import { startLiveData } from '@/features/official/loadOfficial';
 import { loadSettings, useSettings, useTextScale } from '@/features/settings/settingsStore';
 import { Navigation } from '@/screens/_navigation';
 import { COLORS, makePaperTheme } from '@/theme';
@@ -33,8 +33,7 @@ export default function App() {
   useEffect(() => {
     void loadSettings();
     void loadReports();
-    loadPinnedBulletin();
-    void refreshOfficial();
+    startLiveData();
   }, []);
 
   return (

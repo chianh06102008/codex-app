@@ -125,6 +125,9 @@ const vi = {
   demoTitle: 'Chế độ demo',
   demoFeed: 'Giả lập: nguồn chính thức hoạt động, không có cảnh báo',
   demoRain: 'Giả lập: mưa lớn (báo cáo hết hạn nhanh hơn)',
+  rainLine: (mm: number, p: number | null, here: boolean, time: string) =>
+    `Mưa 3 giờ tới: ${mm} mm${p !== null ? ` (khả năng ${p}%)` : ''} · ${here ? 'tại vị trí của bạn' : 'khu thí điểm'} · mô hình Open-Meteo, ${time}`,
+  rainHeavy: 'Dự báo mưa lớn: báo cáo của người dân hết hiệu lực nhanh hơn.',
   demoSamples: 'Hiện báo cáo mẫu',
   demoSpeed: 'Giả lập: đang chạy xe 25 km/h',
 };
@@ -246,6 +249,9 @@ const en: Copy = {
   demoTitle: 'Demo mode',
   demoFeed: 'Simulate: official feed reachable, no warnings',
   demoRain: 'Simulate: heavy rain (reports expire faster)',
+  rainLine: (mm: number, p: number | null, here: boolean, time: string) =>
+    `Rain next 3 h: ${mm} mm${p !== null ? ` (${p}% chance)` : ''} · ${here ? 'at your location' : 'pilot area'} · Open-Meteo model, ${time}`,
+  rainHeavy: 'Heavy rain forecast: crowd reports expire sooner.',
   demoSamples: 'Show sample reports',
   demoSpeed: 'Simulate: riding at 25 km/h',
 };

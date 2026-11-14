@@ -11,6 +11,7 @@
 // with real geometry intersection.
 import type { LatLon, OfficialFeedStatus, OfficialStatement, Segment } from '@/domain/types';
 import { createStore, useStore } from '@/lib/store';
+import type { RainContext } from '@/features/official/rain';
 
 export type OfficialSource = {
   feedStatus: OfficialFeedStatus;
@@ -21,6 +22,10 @@ export type OfficialSource = {
   /** Rain context, labeled as a model (Open-Meteo). Heavy rain speeds up report decay. */
   heavyRain: boolean;
   heavyRainSimulated: boolean;
+  /** Real Open-Meteo reading at the phone's location (null until fetched). */
+  rain: RainContext | null;
+  /** Where the phone is, when location permission was given. */
+  userLocation: LatLon | null;
 };
 
 export const officialStore = createStore<OfficialSource>({
@@ -30,6 +35,8 @@ export const officialStore = createStore<OfficialSource>({
   simulated: false,
   heavyRain: false,
   heavyRainSimulated: false,
+  rain: null,
+  userLocation: null,
 });
 
 export function setOfficialSource(next: Partial<OfficialSource>) {
@@ -50,7 +57,9 @@ export function simulateHealthyFeed(on: boolean) {
 }
 
 export function simulateHeavyRain(on: boolean) {
-  setOfficialSource({ heavyRain: on, heavyRainSimulated: on });
+  // Switching the simulation off falls back to the real reading, not to "no rain".
+  const real = officialStore.get().rain?.heavy ?? false;
+  setOfficialSource({ heavyRain: on || real, heavyRainSimulated: on });
 }
 
 function pointInPolygon(p: LatLon, ring: LatLon[]): boolean {

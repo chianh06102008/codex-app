@@ -4,8 +4,14 @@
 // 2. If EXPO_PUBLIC_BULLETIN_SERVER_URL is set (npm run bulletin-server on the laptop), the
 //    last 24 h of NCHMF bulletins are fetched; success makes the feed "ok".
 // A failed fetch keeps "last known" — it never becomes an all-clear.
+import * as Location from 'expo-location';
+
+import { OFFICIAL_REFRESH_MS, PILOT_PROVINCE, RAIN_REFRESH_MS } from '@/config';
 import type { OfficialStatement } from '@/domain/types';
-import { setOfficialSource } from '@/features/fusion/officialSource';
+import { SLICE_REGION } from '@/features/map/roads';
+import { syncSharedReports } from '@/features/report/reportStore';
+import { fetchRainAt } from './rain';
+import { officialStore, setOfficialSource } from '@/features/fusion/officialSource';
 import { timeoutSignal } from '@/lib/timeout';
 import pinned from '../../../fixtures/statements/2026-11-13_lqsl-984.json';
 
@@ -25,9 +31,12 @@ export async function refreshOfficial(): Promise<boolean> {
     const body = (await res.json()) as { retrieved_at?: string; statements?: OfficialStatement[] };
     if (!Array.isArray(body.statements)) return false;
     // Parse failures come back without an issuer; keep only bulletins that were actually read.
-    const statements = body.statements.filter((s) => s && s.id && s.issuer);
+    // NCHMF bulletins are national. A statement with no geometry covers the whole pilot slice,
+    // so only bulletins that name the pilot province may enter (else Lâm Đồng would floor Đà Nẵng).
+    const read = body.statements.filter((s) => s && s.id && s.issuer);
+    const statements = read.filter((s) => namesPilot(s));
     // If any bulletin could not be read, the picture is incomplete: say "last known", not "ok".
-    const complete = statements.length === body.statements.length;
+    const complete = read.length === body.statements.length;
     setOfficialSource({
       feedStatus: complete ? 'ok' : 'last_known',
       statements,
@@ -38,4 +47,49 @@ export async function refreshOfficial(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function namesPilot(s: OfficialStatement): boolean {
+  const text = [...(s.area_names ?? []), s.instruction_text ?? ''].join(' ');
+  return text.includes(PILOT_PROVINCE);
+}
+
+/** The phone's position if permission is given; null otherwise (never blocks the app). */
+async function currentPosition() {
+  try {
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return null;
+    const last = await Location.getLastKnownPositionAsync();
+    const pos = last ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshRain(): Promise<void> {
+  const here = (await currentPosition()) ?? null;
+  if (here) setOfficialSource({ userLocation: here });
+  // No permission: read rain over the pilot slice instead, and the UI says where it was read.
+  const at = here ?? { latitude: SLICE_REGION.latitude, longitude: SLICE_REGION.longitude };
+  const rain = await fetchRainAt(at.latitude, at.longitude);
+  if (!rain) return;
+  const simulated = officialStore.get().heavyRainSimulated;
+  setOfficialSource({ rain, heavyRain: rain.heavy || simulated });
+}
+
+let timers: ReturnType<typeof setInterval>[] = [];
+
+/** Starts every live source. Safe to call once at app start. */
+export function startLiveData() {
+  loadPinnedBulletin();
+  void refreshOfficial();
+  void refreshRain();
+  void syncSharedReports();
+  timers.forEach(clearInterval);
+  timers = [
+    setInterval(() => void refreshOfficial(), OFFICIAL_REFRESH_MS),
+    setInterval(() => void refreshRain(), RAIN_REFRESH_MS),
+    setInterval(() => void syncSharedReports(), 30 * 1000),
+  ];
 }

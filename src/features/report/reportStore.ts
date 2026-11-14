@@ -1,6 +1,7 @@
-// Crowd reports. MVP has no shared backend: reports are kept on this phone
-// (AsyncStorage) and feed local fusion so the effect is visible. Seeded sample
-// reports sit on real Hải Châu roads and are always labeled as samples in the UI.
+// Crowd reports. Kept on this phone (AsyncStorage) and, when EXPO_PUBLIC_VISION_SERVER_URL
+// is set, shared through server/vision.mjs so every phone sees them. Seeded sample reports
+// are off by default (Demo panel) and always labeled as samples in the UI.
+import { timeoutSignal } from '@/lib/timeout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { DepthCategory, Report } from '@/domain/types';
@@ -60,7 +61,7 @@ function sampleReports(): Report[] {
 
 type State = { reports: Report[]; loaded: boolean; showSamples: boolean };
 
-export const reportStore = createStore<State>({ reports: sampleReports(), loaded: false, showSamples: true });
+export const reportStore = createStore<State>({ reports: sampleReports(), loaded: false, showSamples: false });
 
 export async function loadReports(): Promise<void> {
   try {
@@ -72,8 +73,52 @@ export async function loadReports(): Promise<void> {
   }
 }
 
+// ---------- Shared reports (server/vision.mjs /api/reports) ----------
+function reportServer(): string | null {
+  const base = process.env.EXPO_PUBLIC_VISION_SERVER_URL;
+  return base ? base.replace(/\/$/, '') : null;
+}
+
+/** Pulls reports made on other phones. Failure leaves local reports untouched. */
+export async function syncSharedReports(): Promise<boolean> {
+  const base = reportServer();
+  if (!base) return false;
+  try {
+    const res = await fetch(`${base}/api/reports`, { signal: timeoutSignal(10000) });
+    if (!res.ok) return false;
+    const body = (await res.json()) as { reports?: Report[] };
+    if (!Array.isArray(body.reports)) return false;
+    reportStore.set((s) => {
+      const localIds = new Set(s.reports.filter((r) => !r.shared).map((r) => r.id));
+      const shared = body.reports!
+        .filter((r) => !localIds.has(r.id) && ['ankle', 'wheel', 'unknown'].includes(r.human_category))
+        .map((r) => ({ ...r, shared: true, sample: false, photo_uri: null }));
+      return { ...s, reports: [...s.reports.filter((r) => !r.shared), ...shared] };
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function pushReport(report: Report, path = '') {
+  const base = reportServer();
+  if (!base) return;
+  try {
+    const { photo_uri: _photo, sample: _sample, shared: _shared, ...body } = report;
+    await fetch(`${base}/api/reports${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(path ? {} : body),
+      signal: timeoutSignal(10000),
+    });
+  } catch {
+    // Offline: the report still counts on this phone; the next sync does not resend (MVP).
+  }
+}
+
 async function persist() {
-  const mine = reportStore.get().reports.filter((r) => !r.sample);
+  const mine = reportStore.get().reports.filter((r) => !r.sample && !r.shared);
   try {
     await AsyncStorage.setItem(KEY, JSON.stringify(mine));
   } catch {
@@ -84,6 +129,7 @@ async function persist() {
 export async function addReport(report: Report): Promise<void> {
   reportStore.set((s) => ({ ...s, reports: [...s.reports, report] }));
   await persist();
+  void pushReport(report);
 }
 
 export async function retractReport(id: string): Promise<void> {
@@ -93,11 +139,12 @@ export async function retractReport(id: string): Promise<void> {
     reports: s.reports.map((r) => (r.id === id ? { ...r, status: 'retracted', retracted_at: now } : r)),
   }));
   await persist();
+  void pushReport({ id } as Report, `/${encodeURIComponent(id)}/retract`);
 }
 
 /** Removes every report made on this phone (S8 "delete my reports"). Samples stay. */
 export async function deleteMyReports(): Promise<void> {
-  reportStore.set((s) => ({ ...s, reports: s.reports.filter((r) => r.sample) }));
+  reportStore.set((s) => ({ ...s, reports: s.reports.filter((r) => r.sample || r.shared) }));
   await persist();
 }
 

@@ -74,6 +74,7 @@ export type Report = {
   retracted_at: string | null;
   photo_uri?: string | null; // local, redacted image only
   sample?: boolean; // seeded demo data, always labeled in the UI
+  shared?: boolean; // made on another phone, received from the report server
 };
 
 // ---------- Derived state (Dev 3) ----------
