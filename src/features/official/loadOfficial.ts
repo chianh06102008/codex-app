@@ -12,6 +12,7 @@ import { SLICE_REGION, insideSlice } from '@/features/map/roads';
 import { sessionStore, updateSession } from '@/features/routing/session';
 import { syncSharedReports } from '@/features/report/reportStore';
 import { fetchRainAt } from './rain';
+import { updateLivePosition } from '@/features/live/liveStore';
 import { officialStore, setOfficialSource } from '@/features/fusion/officialSource';
 import { timeoutSignal } from '@/lib/timeout';
 import pinned from '../../../fixtures/statements/2026-11-13_lqsl-984.json';
@@ -114,6 +115,7 @@ export async function refreshRain(): Promise<void> {
   const here = (await currentPosition()) ?? null;
   if (here) {
     setOfficialSource({ userLocation: here });
+    updateLivePosition(here);
     void detectProvince(here);
     // Inside the pilot slice the trip starts where the phone is, unless the user already chose a start.
     if (insideSlice(here) && sessionStore.get().origin.kind === 'default') {
@@ -131,10 +133,27 @@ export async function refreshRain(): Promise<void> {
 let timers: ReturnType<typeof setInterval>[] = [];
 
 /** Starts every live source. Safe to call once at app start. */
+let watching = false;
+async function watchPosition() {
+  if (watching) return;
+  try {
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return;
+    watching = true;
+    await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 150 }, (pos) => {
+      const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setOfficialSource({ userLocation: p });
+      updateLivePosition(p);
+    });
+  } catch {
+    watching = false;
+  }
+}
+
 export function startLiveData() {
   loadPinnedBulletin();
   void refreshOfficial();
-  void refreshRain();
+  void refreshRain().then(watchPosition);
   void syncSharedReports();
   timers.forEach(clearInterval);
   timers = [

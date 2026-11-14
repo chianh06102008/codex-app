@@ -13,6 +13,7 @@ import type { SegmentStateKey } from '@/domain/types';
 import { DemoPanel } from '@/features/demo/DemoPanel';
 import { useOfficialSource } from '@/features/fusion/officialSource';
 import { NearYou } from '@/features/near/NearYou';
+import { LiveOverlays } from '@/features/live/LiveOverlays';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
 import { STATE_STYLE } from '@/features/map/stateStyle';
@@ -62,7 +63,9 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
             updateSession({ segmentId: id });
             go('segment');
           }}
-        />
+        >
+          <LiveOverlays />
+        </FloodMap>
       </View>
 
       {/* Top overlay: app bar, official status first, then the legend. */}
@@ -168,7 +171,7 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
               <T t="title" w="bold" accessibilityRole="header">{s.askHeading}</T>
               <T t="small" color={COLORS.inkSoft}>{sheetLine}</T>
             </View>
-            <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} />
+            <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} onOpenLive={() => go('live')} />
           </>
         )}
 

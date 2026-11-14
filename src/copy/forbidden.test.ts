@@ -1,6 +1,7 @@
 // T02 copy lint (PRD §18). Covers every user-visible string file; add new ones to SOURCES.
 import { COPY } from './mapReport';
 import { STRINGS } from './strings';
+import { LIVE } from './live';
 
 // Allowed negations, removed before scanning.
 const ALLOWED = [/không phải xác nhận an toàn/gi, /không nên đi/gi, /not a clearance/gi, /not an all-clear/gi];
@@ -11,6 +12,7 @@ const FORBIDDEN_VI = [/nên đi/i, /đi được/i, /an toàn/i, /đường an t
 function allStrings(obj: Record<string, unknown>): string[] {
   return Object.values(obj).flatMap((v) => {
     if (typeof v === 'string') return [v];
+    if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string');
     if (typeof v === 'function') {
       // Template functions: render with sample values.
       const out = (v as (...a: unknown[]) => unknown)(5, 10);
@@ -20,7 +22,7 @@ function allStrings(obj: Record<string, unknown>): string[] {
   });
 }
 
-const SOURCES = { mapReport: COPY, strings: STRINGS };
+const SOURCES = { mapReport: COPY, strings: STRINGS, live: LIVE };
 
 describe('T02 forbidden copy', () => {
   for (const [name, copy] of Object.entries(SOURCES)) {

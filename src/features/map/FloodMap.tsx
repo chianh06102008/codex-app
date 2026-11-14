@@ -1,7 +1,7 @@
 // Map of the pilot slice with segment states, official layer and optional route.
 // The official/uncertain layer has no off switch (PRD T14). On refusal, pass no
 // route: nothing is drawn through blocked roads (P3).
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
 import { Text } from 'react-native-paper';
@@ -30,6 +30,8 @@ export type FloodMapProps = {
   height?: number;
   /** Corner radius of the map frame. 0 for a full-screen map (S1 Home). */
   cornerRadius?: number;
+  /** Extra map layers (live overlays on Home). */
+  children?: ReactNode;
 };
 
 function FloodMapInner({
@@ -44,6 +46,7 @@ function FloodMapInner({
   onSegmentPress,
   height = 300,
   cornerRadius = 20,
+  children,
 }: FloodMapProps) {
   // Fly to the phone's GPS fix once it arrives. Maps that show a route keep the route in view.
   const mapRef = useRef<MapView>(null);
@@ -146,6 +149,7 @@ function FloodMapInner({
         {highlight && (
           <Polyline coordinates={highlight.geometry} strokeColor="#111111" strokeWidth={10} zIndex={2} lineCap="round" />
         )}
+        {children}
         {origin && <Marker coordinate={origin} pinColor={BRAND.primary} title="A" />}
         {destination && <Marker coordinate={destination} pinColor="#7A1F5C" title="B" />}
       </MapView>
