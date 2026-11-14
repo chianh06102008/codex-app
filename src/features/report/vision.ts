@@ -3,6 +3,7 @@
 // looks like a measurement is rejected (P4). Timeout -> only `unknown` is offered.
 import { VISION_TIMEOUT_MS } from '@/config';
 import type { DepthCategory } from '@/domain/types';
+import { isAbort, timeoutSignal } from '@/lib/timeout';
 
 export type VisionResult =
   | { ok: true; category: DepthCategory; confidence: number | null; reference_objects: string[]; mock: boolean }
@@ -32,11 +33,11 @@ export async function analyzePhoto(imageBase64: string): Promise<VisionResult> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_base64: imageBase64, mime: 'image/jpeg' }),
-      signal: AbortSignal.timeout(VISION_TIMEOUT_MS),
+      signal: timeoutSignal(VISION_TIMEOUT_MS),
     });
     if (!res.ok) return { ok: false, reason: 'error' };
     return validateVision(await res.json());
   } catch (e) {
-    return { ok: false, reason: e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'error' };
+    return { ok: false, reason: isAbort(e) ? 'timeout' : 'error' };
   }
 }

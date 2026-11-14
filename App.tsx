@@ -53,7 +53,7 @@ function AppContent() {
   <Card mode="contained" style={styles.warning} accessible accessibilityLiveRegion="polite"><Card.Content><Text variant="titleMedium" style={styles.warningTitle}>{feedDown ? c.status : official.statements.length ? mr.warningInForce : mr.state_no_adverse_evidence}</Text><Text variant="bodyLarge">{feedDown ? c.notice : official.statements.length ? '' : mr.calmest}</Text>{official.simulated && <Text style={styles.simulated}>{mr.simulatedBadge}</Text>}<Button mode="text" onPress={() => setScreen('warning')} contentStyle={styles.touch}>{c.source}</Button></Card.Content></Card>
   {screen !== 'home' && <Button icon="arrow-left" onPress={() => setScreen(BACK[screen] ?? 'home')} contentStyle={styles.touch} style={styles.back}>{c.back}</Button>}
   {screen === 'home' && <>
-   <FloodMap states={states} feedUnavailable={feedDown} statements={official.statements} height={300} attribution={mr.mapAttribution} onSegmentPress={(id) => { updateSession({ segmentId: id }); setScreen('segment'); }} />
+   <FloodMap states={states} feedUnavailable={feedDown} statements={official.statements} height={300} onSegmentPress={(id) => { updateSession({ segmentId: id }); setScreen('segment'); }} />
    <Legend lang={language} />
    <Text style={styles.pilot}>{mr.pilotArea}</Text>
    <Text variant="headlineMedium" style={styles.heading}>{c.title}</Text><Text variant="bodyLarge">{c.description}</Text>

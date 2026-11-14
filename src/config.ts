@@ -24,5 +24,16 @@ export const ALT_ROUTE_MIN_DIFFERENCE = 0.3;
 export const VISION_TIMEOUT_MS = 12_000;
 /** Snap a tap or GPS fix to a road only within this distance. */
 export const SNAP_MAX_M = 120;
+/**
+ * Basemap: OpenStreetMap data rendered by CARTO ("Positron", light and calm so the
+ * four state colors stand out). No API key, no Google. Free tier for low-volume /
+ * non-commercial use with attribution. For production, swap to self-hosted or
+ * OpenFreeMap vector tiles with MapLibre (needs a dev build). Safety-critical paths
+ * never depend on tiles (PRD §11): routing uses the bundled OSM graph.
+ */
+export const MAP_TILE_URL = 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+export const MAP_TILE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO';
+/** Place search: Photon (komoot), OSM-based geocoder, no key. Biased to the pilot slice. */
+export const GEOCODER_URL = 'https://photon.komoot.io/api/';
 /** Typical urban speeds, used only to tie-break and for an optional secondary duration. */
 export const SPEED_KMH: Record<'motorbike' | 'walk' | 'car', number> = { motorbike: 22, walk: 4.5, car: 18 };

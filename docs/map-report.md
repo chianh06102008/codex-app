@@ -28,6 +28,20 @@ npm run vision-server
 
 Restart `npx expo start` after changing `.env`. Without a vision server, the report flow follows PRD §12: the only depth choice is "Unknown" plus "water visible".
 
+## Map & geo data: no Google, no paid keys
+
+| Need | Source | Key? | Notes |
+|---|---|---|---|
+| Basemap tiles | **CARTO Positron**, rendered from OpenStreetMap (`MAP_TILE_URL` in `src/config.ts`) | No | Free for low-volume/non-commercial use with attribution (shown on the map). Replaces Apple/Google tiles on both platforms. |
+| Roads for routing | **OpenStreetMap** via Overpass, bundled in the app | No | Works offline. The safety-critical path never depends on a tile server (PRD §11). |
+| Place search | **Photon** (komoot), an OSM geocoder (`src/features/map/geocode.ts`) | No | Fair use: searches only on tap. Vietnamese names work ("Chợ Hàn"). |
+| Rain context (Dev 2) | **Open-Meteo** forecast API | No | Free, no key, hourly precipitation. Label it as a model (PRD §14). |
+| Elevation prior (V1) | **Copernicus DEM GLO-30** / Open-Meteo elevation API | No | Weak prior only, never a depth (PRD §1). |
+| Official warnings (Dev 2) | **NCHMF** (nchmf.gov.vn), **VNDMS** (vndms.dmc.gov.vn) | No | The only sources that may set a floor. |
+| Production upgrade | **OpenFreeMap** vector tiles + **MapLibre** | No | Free, no limits, nicer and offline-cacheable, but needs a development build (it won't run in Expo Go). |
+
+The Google/Apple keys in `.env.example` are now optional; the app doesn't need them.
+
 ## What is real and what is sample data
 
 | Piece | Status |

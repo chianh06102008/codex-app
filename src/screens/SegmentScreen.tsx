@@ -1,7 +1,6 @@
 // S5 Segment: why this road. Official floor, reports with ages, model vs human,
 // freshness. No comment thread.
-import { Image } from 'react-native';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Button, ProgressBar, Text } from 'react-native-paper';
 
 import { COPY, type Lang } from '@/copy/mapReport';
@@ -52,7 +51,7 @@ export function SegmentScreen({ lang, go }: Props) {
         statements={official.statements}
         highlightSegmentId={seg.id}
         height={220}
-        attribution={c.mapAttribution}
+
       />
 
       <Card>

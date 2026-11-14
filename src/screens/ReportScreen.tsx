@@ -220,7 +220,7 @@ export function ReportScreen({ lang, go }: Props) {
                 else setError(c.noRoadNear);
               }}
               height={300}
-              attribution={c.mapAttribution}
+
             />
             {seg && <Text variant="titleMedium">{seg.name ?? c.unnamedRoad}</Text>}
             {!!error && <Text style={styles.error}>{error}</Text>}

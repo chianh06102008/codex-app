@@ -18,6 +18,7 @@ import { SpeedGate } from '@/features/speed-gate/SpeedGate';
 import { requestLocation, useSpeed } from '@/features/speed-gate/speed';
 import { OfficialBanner } from '@/features/ui/OfficialBanner';
 import { Card } from '@/features/ui/Card';
+import { searchPlaces } from '@/features/map/geocode';
 
 type Props = { lang: Lang; go: (screen: 'result') => void };
 
@@ -63,16 +64,9 @@ export function AskScreen({ lang, go }: Props) {
   }
 
   async function search() {
-    const base = process.env.EXPO_PUBLIC_MAPS_SERVER_URL;
-    if (!base) { setSearchStatus(c.searchUnavailable); return; }
     setSearchStatus('…');
     try {
-      const res = await fetch(`${base.replace(/\/$/, '')}/api/places?q=${encodeURIComponent(query)}&lang=${lang}`, {
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      const inside = (data.places ?? []).filter((p: { coordinate?: LatLon }) => p.coordinate && insideSlice(p.coordinate));
+      const inside = await searchPlaces(query.trim(), lang);
       setResults(inside);
       setSearchStatus(inside.length ? '' : c.outsideSlice);
     } catch {
@@ -105,7 +99,7 @@ export function AskScreen({ lang, go }: Props) {
           destination={session.destination?.point}
           onPress={(p) => pickPoint(p, c.pickedOnMap, 'map')}
           height={280}
-          attribution={c.mapAttribution}
+
         />
         <Legend lang={lang} />
 

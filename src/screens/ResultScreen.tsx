@@ -95,7 +95,7 @@ export function ResultScreen({ lang, go }: Props) {
           destination={session.destination?.point}
           onSegmentPress={(id) => { updateSession({ segmentId: id }); go('segment'); }}
           height={320}
-          attribution={c.mapAttribution}
+
         />
 
         {option && (

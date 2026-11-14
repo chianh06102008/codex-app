@@ -2,10 +2,11 @@
 // The official/uncertain layer has no off switch (PRD T14). On refusal, pass no
 // route: nothing is drawn through blocked roads (P3).
 import { memo, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import MapView, { Marker, Polygon, Polyline, type MapPressEvent } from 'react-native-maps';
+import { Platform, StyleSheet, View } from 'react-native';
+import MapView, { Marker, Polygon, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
 import { Text } from 'react-native-paper';
 
+import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from '@/config';
 import type { LatLon, OfficialStatement, SegmentState } from '@/domain/types';
 import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION } from './roads';
 import { BRAND, STATE_STYLE } from './stateStyle';
@@ -21,7 +22,6 @@ export type FloodMapProps = {
   onPress?: (p: LatLon) => void;
   onSegmentPress?: (segmentId: string) => void;
   height?: number;
-  attribution: string;
 };
 
 function FloodMapInner({
@@ -35,7 +35,6 @@ function FloodMapInner({
   onPress,
   onSegmentPress,
   height = 300,
-  attribution,
 }: FloodMapProps) {
   // Draw only roads with adverse or uncertain evidence; the basemap shows the rest.
   // When the feed is down every road is uncertain: the area tint carries that instead.
@@ -54,6 +53,10 @@ function FloodMapInner({
       <MapView
         style={StyleSheet.absoluteFill}
         initialRegion={SLICE_REGION}
+        // OSM tiles replace the platform basemap: no Google key, same look on iOS and Android.
+        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+        minZoomLevel={12}
+        maxZoomLevel={19}
         onPress={onPress ? (e: MapPressEvent) => onPress(e.nativeEvent.coordinate) : undefined}
         showsPointsOfInterest={false}
         showsBuildings={false}
@@ -62,6 +65,7 @@ function FloodMapInner({
         pitchEnabled={false}
         accessibilityLabel="Bản đồ khu vực thí điểm"
       >
+        <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={19} shouldReplaceMapContent zIndex={-1} tileCacheMaxAge={7 * 24 * 3600} />
         {feedUnavailable && (
           <Polygon
             coordinates={SLICE_POLYGON}
@@ -121,7 +125,7 @@ function FloodMapInner({
         {destination && <Marker coordinate={destination} pinColor="#7A1F5C" title="B" />}
       </MapView>
       <View style={styles.attribution} pointerEvents="none">
-        <Text style={styles.attributionText}>{attribution}</Text>
+        <Text style={styles.attributionText}>{MAP_TILE_ATTRIBUTION}</Text>
       </View>
     </View>
   );
