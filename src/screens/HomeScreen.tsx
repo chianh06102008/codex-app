@@ -12,6 +12,7 @@ import { STRINGS } from '@/copy/strings';
 import type { SegmentStateKey } from '@/domain/types';
 import { DemoPanel } from '@/features/demo/DemoPanel';
 import { useOfficialSource } from '@/features/fusion/officialSource';
+import { NearYou } from '@/features/near/NearYou';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
 import { STATE_STYLE } from '@/features/map/stateStyle';
@@ -152,6 +153,8 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
           <T t="small" color={COLORS.inkSoft}>{sheetLine}</T>
           <T t="tiny" color={COLORS.inkSoft}>{mr.pilotArea}</T>
         </View>
+
+        <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} />
 
         <Pressable
           onPress={() => go('ask')}
