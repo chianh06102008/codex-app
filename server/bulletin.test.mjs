@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-import { isAllowedBulletinUrl, parseBulletinHtml } from './bulletin.mjs';
+import { fetchRain, isAllowedBulletinUrl, parseBulletinHtml, validityAt } from './bulletin.mjs';
 
 const SOURCE_URL =
   'https://www.nchmf.gov.vn/kttv/vi-VN/1/tin-canh-bao-lu-quet-sat-lo-dat-sut-lun-dat-do-mua-lu-hoac-dong-chay-tren-khu-vuc-cac-tinh-thanh-pho-da-nang-va-quang-ngai-post55215.html';
@@ -60,6 +60,27 @@ test('detects do-not-travel wording', () => {
   const evac = html.replace('Chi tiết trong bản tin đính kèm', 'Người dân cần sơ tán khỏi khu vực nguy hiểm');
   const s = parseBulletinHtml({ html: evac, sourceUrl: SOURCE_URL, retrievedAt: RETRIEVED_AT });
   assert.equal(s.do_not_travel, true);
+});
+
+test('reads a published risk level, but not "cấp" inside ordinary words', () => {
+  const withLevel = html.replace('Chi tiết trong bản tin đính kèm', 'Cảnh báo cấp độ rủi ro thiên tai: Cấp 2.');
+  assert.equal(parseBulletinHtml({ html: withLevel, sourceUrl: SOURCE_URL, retrievedAt: RETRIEVED_AT }).severity, 'Cấp 2');
+
+  const noise = html.replace('Chi tiết trong bản tin đính kèm', 'Trạm cung cấp 3 bản tin mỗi ngày');
+  assert.equal(parseBulletinHtml({ html: noise, sourceUrl: SOURCE_URL, retrievedAt: RETRIEVED_AT }).severity, null);
+});
+
+test('validityAt: in force, expired, and unknown when the end time is missing', () => {
+  const s = parseBulletinHtml({ html, sourceUrl: SOURCE_URL, retrievedAt: RETRIEVED_AT });
+  assert.equal(validityAt(s, new Date('2026-11-14T01:00:00+07:00')), 'in_force');
+  assert.equal(validityAt(s, new Date('2026-11-14T05:21:00+07:00')), 'expired');
+  // Never call a warning ended just because we could not read its end time.
+  assert.equal(validityAt({ ...s, valid_until: null }, new Date('2030-01-01T00:00:00Z')), 'unknown');
+});
+
+test('rain rejects bad coordinates before calling the network', async () => {
+  await assert.rejects(fetchRain(Number('abc'), 108), RangeError);
+  await assert.rejects(fetchRain(16, 999), RangeError);
 });
 
 test('only fetches https nchmf.gov.vn pages', () => {

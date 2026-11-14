@@ -130,7 +130,9 @@ export function parseBulletinHtml({ html, sourceUrl, retrievedAt }) {
     }
   }
 
-  const severity = body.match(/Cấp\s*(\d)/i);
+  // Risk level as published, e.g. "Cấp 1". Case-sensitive on purpose: with /i, everyday
+  // words like "cung cấp 3 ..." would be misread as a risk level.
+  const severity = body.match(/(?<![\p{L}])Cấp (\d)\b/u);
   const hazard = HAZARD_RULES.find(([pattern]) => pattern.test(title));
 
   const statement = {
@@ -181,8 +183,43 @@ export async function fetchBulletin(sourceUrl) {
   }
 }
 
+// Small in-memory cache so we don't hit NCHMF on every request, and so a
+// temporary outage can still return the last good parse (with its OLD retrieved_at,
+// so the app can label it "last known" instead of pretending it is fresh).
+const CACHE_TTL_MS = 5 * 60_000;
+const bulletinCache = new Map(); // url -> { statement, fetchedAt }
+
+/** Returns { statement, freshness: 'fresh' | 'cached' | 'last_known' | 'failed' }. */
+export async function getBulletin(sourceUrl, now = Date.now()) {
+  const cached = bulletinCache.get(sourceUrl);
+  if (cached && now - cached.fetchedAt < CACHE_TTL_MS) return { statement: cached.statement, freshness: 'cached' };
+
+  const statement = await fetchBulletin(sourceUrl);
+  if (statement.parse_status !== 'failed') {
+    bulletinCache.set(sourceUrl, { statement, fetchedAt: now });
+    return { statement, freshness: 'fresh' };
+  }
+  if (cached) return { statement: cached.statement, freshness: 'last_known' };
+  return { statement, freshness: 'failed' };
+}
+
+/**
+ * Is a statement in force at `now`? Returns 'in_force' | 'expired' | 'unknown'.
+ * Without a valid_until we cannot say it has ended, so we answer 'unknown', never 'expired'.
+ */
+export function validityAt(statement, now = new Date()) {
+  const from = statement.valid_from ? new Date(statement.valid_from) : null;
+  const until = statement.valid_until ? new Date(statement.valid_until) : null;
+  if (until && now > until) return 'expired';
+  if (from && until && now >= from) return 'in_force';
+  return 'unknown';
+}
+
 /** Rain context for the next hours from Open-Meteo. Labeled as a model; never a floor. */
 export async function fetchRain(lat, lon, hours = 3) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    throw new RangeError('lat and lon are required numbers');
+  }
   const params = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lon),
@@ -200,6 +237,7 @@ export async function fetchRain(lat, lon, hours = 3) {
     kind: 'model', // UI must say this is a model forecast, not an observation or a warning
     source: 'Open-Meteo',
     source_url: 'https://open-meteo.com/',
+    attribution: 'Weather data by Open-Meteo.com (CC BY 4.0)', // must be shown wherever rain is shown
     may_set_floor: false,
     retrieved_at: new Date().toISOString(),
     hours,
@@ -214,9 +252,19 @@ export async function fetchRain(lat, lon, hours = 3) {
 
 // ---------- HTTP server ----------
 
-function send(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }).end(JSON.stringify(body));
+// The data is public, read-only, GET only, so any origin may read it (lets a browser page call it).
+const CORS = { 'Access-Control-Allow-Origin': '*' };
+
+function send(res, status, body, headers = {}) {
+  res
+    .writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...CORS, ...headers })
+    .end(JSON.stringify(body));
 }
+
+// The real bulletin pinned in fixtures/statements/, used as the viewer's default.
+const DEFAULT_BULLETIN_URL =
+  'https://www.nchmf.gov.vn/kttv/vi-VN/1/tin-canh-bao-lu-quet-sat-lo-dat-sut-lun-dat-do-mua-lu-hoac-dong-chay-tren-khu-vuc-cac-tinh-thanh-pho-da-nang-va-quang-ngai-post55215.html';
+const DEFAULT_POINT = { lat: 16.061, lon: 108.218 }; // Da Nang, same center as App.tsx
 
 export function createServer() {
   return http.createServer(async (req, res) => {
@@ -226,27 +274,108 @@ export function createServer() {
     if (url.pathname === '/api/official/statement') {
       const source = url.searchParams.get('url') || '';
       if (!isAllowedBulletinUrl(source)) return send(res, 400, { error: 'url must be an https nchmf.gov.vn page' });
-      const statement = await fetchBulletin(source);
+      const { statement, freshness } = await getBulletin(source);
       // 200 even when parse failed: the app still needs the link and must show "unavailable".
-      return send(res, 200, statement);
+      return send(res, 200, statement, { 'X-Bulletin-Freshness': freshness });
     }
 
     if (url.pathname === '/api/rain') {
-      const lat = Number(url.searchParams.get('lat'));
-      const lon = Number(url.searchParams.get('lon'));
-      if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-        return send(res, 400, { error: 'lat and lon are required numbers' });
-      }
       try {
-        return send(res, 200, await fetchRain(lat, lon));
+        const rain = await fetchRain(Number(url.searchParams.get('lat')), Number(url.searchParams.get('lon')));
+        return send(res, 200, rain);
       } catch (error) {
+        if (error instanceof RangeError) return send(res, 400, { error: error.message });
         console.error('Rain fetch failed:', error.message);
         return send(res, 503, { error: 'Rain context unavailable' });
       }
     }
 
+    // Developer preview: a plain web page that shows what the parser read, for reviewing in a browser.
+    if (url.pathname === '/') {
+      const source = url.searchParams.get('url') || DEFAULT_BULLETIN_URL;
+      const html = isAllowedBulletinUrl(source)
+        ? await renderPreview(source)
+        : renderPage('<p class="bad">Link phải là trang https://www.nchmf.gov.vn/…</p>', source);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(html);
+      return;
+    }
+
     return send(res, 404, { error: 'Not found' });
   });
+}
+
+// ---------- developer preview page (not the app UI; copy follows PRD §18) ----------
+
+// Everything from the bulletin is untrusted text, so it is always escaped before going into HTML.
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+const fmtVn = (iso) =>
+  iso ? new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false }) : 'không ghi';
+
+const VALIDITY_LABEL = {
+  in_force: ['Đang có hiệu lực. Ảnh người dân không thể hạ mức này.', 'bad'],
+  expired: ['Đã hết hiệu lực theo thời hạn ghi trong bản tin.', 'muted'],
+  unknown: ['Không rõ thời hạn. Coi như vẫn có thể còn hiệu lực.', 'bad'],
+};
+
+async function renderPreview(source) {
+  const [{ statement: s, freshness }, rain] = await Promise.all([
+    getBulletin(source),
+    fetchRain(DEFAULT_POINT.lat, DEFAULT_POINT.lon).catch(() => null),
+  ]);
+
+  let body;
+  if (s.parse_status === 'failed') {
+    // §18 "feed down" copy. Only the link, no invented summary.
+    body = `<p class="band bad">Không lấy được tình trạng chính thức. Đừng coi map trống là hết cảnh báo.</p>
+      <p><a href="${escapeHtml(s.source_url)}">Mở bản tin gốc</a></p>`;
+  } else {
+    const [label, tone] = VALIDITY_LABEL[validityAt(s)];
+    body = `
+      <p class="band ${tone}">${escapeHtml(label)}</p>
+      <p><a href="${escapeHtml(s.source_url)}">Mở bản tin gốc trên nchmf.gov.vn</a></p>
+      <dl>
+        <dt>Cơ quan</dt><dd>${escapeHtml(s.issuer ?? 'không ghi')}</dd>
+        <dt>Phát hành / hiệu lực từ</dt><dd>${escapeHtml(fmtVn(s.valid_from))}</dd>
+        <dt>Hiệu lực đến</dt><dd>${escapeHtml(fmtVn(s.valid_until))}</dd>
+        <dt>Lấy tin lúc</dt><dd>${escapeHtml(fmtVn(s.retrieved_at))} (${escapeHtml(freshness)})</dd>
+        <dt>Cấp độ rủi ro</dt><dd>${escapeHtml(s.severity ?? 'không có trên trang web, xem PDF')}</dd>
+        <dt>Loại</dt><dd>${escapeHtml(s.hazard_type)}</dd>
+        <dt>Kết quả đọc</dt><dd>${escapeHtml(s.parse_status)}</dd>
+      </dl>
+      <h2>Nguyên văn</h2>
+      <pre>${escapeHtml(s.instruction_text)}</pre>
+      <h2>Khu vực (${s.area_names.length})</h2>
+      <ul>${s.area_names.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`;
+  }
+
+  const rainHtml = rain
+    ? `<p>${escapeHtml(rain.precipitation_mm_total)} mm trong ${rain.hours} giờ tới tại trung tâm Đà Nẵng.</p>
+       <p class="muted">Dự báo mô hình, không phải cảnh báo chính thức và không hạ mức cảnh báo. ${escapeHtml(rain.attribution)}</p>`
+    : '<p class="muted">Không lấy được dữ liệu mưa.</p>';
+
+  return renderPage(`${body}<h2>Mưa (mô hình)</h2>${rainHtml}`, source);
+}
+
+function renderPage(content, source) {
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Official status preview</title>
+<style>
+  body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;color:#152b36;background:#f7f9f8}
+  .band{padding:12px;border-radius:8px;font-weight:700}
+  .bad{background:#ffedce}.muted{color:#5b6b72}
+  pre{white-space:pre-wrap;background:#fff;padding:12px;border-radius:8px}
+  dt{font-weight:700;margin-top:6px} dd{margin:0}
+  form{display:flex;gap:8px;margin-bottom:16px} input{flex:1;padding:8px;min-height:32px}
+  .emergency{margin-top:24px;font-weight:700}
+</style></head><body>
+<h1>Official status · dev preview</h1>
+<form><input name="url" value="${escapeHtml(source)}" aria-label="Link bản tin NCHMF"><button>Đọc</button></form>
+${content}
+<p class="emergency">113 · 114 · 115. FloodScout không phải đơn vị cứu hộ.</p>
+</body></html>`;
 }
 
 // ---------- entry point (only when run directly, not when imported by tests) ----------
@@ -260,7 +389,12 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
     }
     console.log(JSON.stringify(await fetchBulletin(a), null, 2));
   } else if (flag === '--rain') {
-    console.log(JSON.stringify(await fetchRain(Number(a), Number(b)), null, 2));
+    try {
+      console.log(JSON.stringify(await fetchRain(Number(a), Number(b)), null, 2));
+    } catch (error) {
+      console.error(error.message + '\nUsage: node server/bulletin.mjs --rain <lat> <lon>');
+      process.exit(1);
+    }
   } else {
     const port = Number(process.env.BULLETIN_PORT || 8788);
     const host = process.env.BULLETIN_SERVER_HOST || '127.0.0.1';
