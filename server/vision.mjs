@@ -24,18 +24,31 @@ const MAX_BODY = 2_000_000;
 
 const CATEGORIES = ['ankle', 'wheel', 'unknown'];
 
-const PROMPT = `You classify one street photo from Vietnam for a flood-safety app.
-Return JSON only, with exactly these fields:
-- "category": "ankle" if water reaches roughly ankle height against a visible reference;
-  "wheel" if water reaches half a motorbike wheel or higher against a visible reference;
-  "unknown" otherwise.
-- "confidence": number 0..1.
-- "reference_objects": list of objects actually visible and usable to judge depth
-  (e.g. "curb", "motorbike wheel", "ankle", "sandal", "door sill", "car tyre").
-Rules: if no usable reference object is visible, category MUST be "unknown" and reference_objects MUST be [].
-Night, blur, screenshots, indoor frames, or frames that are mostly a face -> "unknown".
-Never give a measurement in centimeters or any number other than confidence.
-Never say a road is safe or passable.`;
+// Prompt from Gemini task G1 (server/vision.prompt.md): stricter reference objects,
+// explicit abstentions, borderline ankle/wheel -> wheel.
+const PROMPT = `You classify one outdoor street photo from Vietnam for a flood-risk reporting tool.
+Return JSON only, matching the schema with exactly these fields:
+- "category": one of "ankle", "wheel", or "unknown".
+- "confidence": number between 0 and 1.
+- "reference_objects": array of short strings naming only physical objects of known height that are visibly in direct contact with the standing water surface and used to judge depth.
+
+Classification rules:
+1. "wheel": standing floodwater reaches half a motorbike wheel (the wheel hub/axle or exhaust pipe) or higher against a visible reference object in the water (e.g. "motorbike wheel", "car tyre", "car bumper", "pedestrian shin"). If depth is borderline between "ankle" and "wheel", choose "wheel".
+2. "ankle": standing floodwater is clearly visible and reaches roughly ankle height (below half a motorbike wheel) against a visible reference object in direct contact with the water (e.g. "curb", "motorbike tire bottom", "ankle", "sandal", "door sill", "step").
+3. "unknown": required in ALL of the following cases:
+   - No standing water is visible on the ground (dry road, damp asphalt sheen only, sky, or wall close-up).
+   - Standing water is visible, but no physical reference object of known scale touches the waterline (e.g. open water surface, water reflections, canal overflow, overhead rooftop view).
+   - Nighttime or dark frames where the waterline intersection against a reference object cannot be verified with certainty.
+   - Motion-blurred, out-of-focus, or rain-smeared frames where reference object edges are indistinct.
+   - Screenshots of a phone screen (status bar, navigation bar, chat bubbles, browser UI, or social media overlays), even if a flood photo is visible inside the screenshot.
+   - Indoor rooms or interior floors.
+   - Frames dominated by a person's face or selfie portrait.
+
+Strict contract invariants (P4, T03):
+- Whenever "category" is "unknown", "reference_objects" MUST be [] (an empty array). Do NOT list objects that are visible in a dry street, indoor room, or screenshot if the category is "unknown".
+- Never list generic scene elements ("water", "street", "road", "sky", "rain", "building", "wall", "roof", "reflection", "glare") in "reference_objects".
+- Never output any measurement in centimeters, millimeters, meters, or inches.
+- Only classify depth category; never output travel advice or road-status claims.`;
 
 const SCHEMA = {
   type: 'object',
@@ -53,13 +66,17 @@ function enforce(raw, meta) {
   const refs = Array.isArray(raw?.reference_objects)
     ? raw.reference_objects.filter((x) => typeof x === 'string' && x.length < 60).slice(0, 8)
     : [];
+  // Generic scene words are not depth references (G1 finding: "roof"/"wall" slipped through).
+  const GENERIC = /^(water|street|road|sky|rain|building|wall|roof|reflection|glare)s?$/i;
+  const usable = refs.filter((r) => !GENERIC.test(r.trim()));
   let category = CATEGORIES.includes(raw?.category) ? raw.category : 'unknown';
-  if (refs.length === 0) category = 'unknown';
+  if (usable.length === 0) category = 'unknown';
   const c = Number(raw?.confidence);
   return {
     category,
     confidence: Number.isFinite(c) ? Math.max(0, Math.min(1, c)) : null,
-    reference_objects: category === 'unknown' && refs.length === 0 ? [] : refs,
+    // unknown always carries no references, so nothing downstream reads a depth into it.
+    reference_objects: category === 'unknown' ? [] : usable,
     ...meta,
   };
 }

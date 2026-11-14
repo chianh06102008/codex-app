@@ -1,0 +1,37 @@
+file,expected,notes
+01_alley_ankle_sandal.jpg,ankle,Daytime narrow alley (hem); floodwater reaches pedestrian sandal and ankle next to curb step
+02_street_ankle_curb.jpg,ankle,Daytime urban street; standing water laps at top edge of concrete sidewalk curb
+03_motorbike_ankle_tire_rim.jpg,ankle,Parked red motorbike by curb; water covers lower tire sidewall and rim edge (ankle depth)
+04_shopfront_ankle_doorsill.jpg,ankle,Shopfront entrance with roller shutter; water reaches door sill and pedestrian ankle
+05_crosswalk_ankle_pedestrian.jpg,ankle,Pedestrian stepping off curb near parked motorbike; water at ankle and sandal height
+06_alley_ankle_step_stone.jpg,ankle,Residential alley with entry step block and blue motorbike; water at lower tire rim and step base
+07_market_ankle_plastic_stool.jpg,ankle,Street vendor area; water covers bottom of low plastic stool legs and lower motorbike tire
+08_overcast_ankle_car_tyre_bottom.jpg,ankle,Overcast street; water covers only bottom rubber sidewall of parked car tyres and curb base
+09_rain_ankle_motorbike_kickstand.jpg,ankle,Blue motorbike parked in rain; water submerges kickstand foot and bottom tire rim
+10_dusk_ankle_curb_drain.jpg,ankle,Dusk street scene; shallow standing water at curb edge and lower motorbike tire rim
+11_motorbike_wheel_half_hub.jpg,wheel,Daytime street; brown floodwater reaches halfway up red motorbike wheels to axle hubs
+12_motorbike_wheel_exhaust.jpg,wheel,Blue motorbike in flooded street; water submerges exhaust pipe and reaches wheel hub height
+13_alley_wheel_motorbike_fender.jpg,wheel,Narrow alley; deep floodwater reaches above half-wheel toward front mudguard/fender
+14_street_wheel_car_bumper.jpg,wheel,Flooded road; water reaches mid-tyre / lower bumper on car and half-wheel on motorbike
+15_shopfront_wheel_shutter_knee.jpg,wheel,Deep street flooding; water above motorbike wheel hub and mid-shin on bystander
+16_intersection_wheel_two_bikes.jpg,wheel,Two motorbikes in flooded intersection; water submerges lower half of all wheels past hubs
+17_underpass_wheel_car_door_sill.jpg,wheel,Flooded dip; water reaches car door sill and submerges more than half of scooter wheels
+18_rain_wheel_delivery_bike.jpg,wheel,Delivery motorbike with rear cargo box in heavy rain; water above half-wheel and exhaust
+19_alley_wheel_pedestrian_shin.jpg,wheel,Flooded alley; water reaches motorbike wheel axle and pedestrian mid-shin
+20_street_wheel_submerged_curb_bike.jpg,wheel,Curb completely underwater; parked dark motorbike has water above wheel hub
+21_open_water_no_ref.jpg,unknown,No reference object: frame filled only with muddy water surface and ripples
+22_water_reflection_no_ref.jpg,unknown,No reference object: close-up angled water surface reflection without scale cues
+23_wide_canal_overflow_no_ref.jpg,unknown,No reference object: wide sheet of water and sky only; no curb or vehicle or person
+24_night_dark_unlit_water.jpg,unknown,No reference object (night): dark unlit night frame with high ISO noise and faint glare on water
+25_night_glare_alley_no_ref.jpg,unknown,No reference object (night): night alley with streetlamp glare on water and no discernible scale object
+26_motion_blur_rain_streak.jpg,unknown,No reference object (blur): heavy motion blur and rain streaks obscure all object edges
+27_out_of_focus_water_blur.jpg,unknown,No reference object (blur): severely out-of-focus / fogged lens frame of water and sky
+28_screenshot_zalo_chat.jpg,unknown,Screenshot with mobile status bar and chat UI chrome surrounding an embedded image
+29_screenshot_news_social.jpg,unknown,Screenshot of mobile browser/social feed with URL bar and action buttons
+30_indoor_living_room_floor.jpg,unknown,Indoor scene showing tiled living room floor and table legs; not an outdoor road report
+31_mostly_face_selfie.jpg,unknown,Close-up portrait/selfie where a person's face fills most of the frame
+32_sky_treetops_rain_no_ref.jpg,unknown,No reference object: camera pointed upward at storm clouds and power lines in rain
+33_wall_closeup_wet_paint.jpg,unknown,No reference object: close-up of damp concrete wall texture with no ground plane or water level
+34_overhead_balcony_rooftops_no_ref.jpg,unknown,No reference object: overhead view of corrugated roofs and water channel with no ground scale reference
+35_dry_street_no_water.jpg,unknown,Dry asphalt street with motorbike and curb; no standing water present
+36_wet_pavement_sheen_no_standing_water.jpg,unknown,Damp pavement sheen after rain with curb visible; no standing water depth

@@ -22,7 +22,9 @@ export function validateVision(body: unknown): VisionResult {
   // No usable reference object -> unknown, whatever the model said (T03).
   const category = refs.length === 0 ? 'unknown' : (b.category as DepthCategory);
   const confidence = typeof b.confidence === 'number' && b.confidence >= 0 && b.confidence <= 1 ? b.confidence : null;
-  return { ok: true, category, confidence, reference_objects: refs as string[], mock: b.mock === true };
+  // unknown never carries references, so nothing downstream reads a depth into it.
+  const reference_objects = category === 'unknown' ? [] : (refs as string[]);
+  return { ok: true, category, confidence, reference_objects, mock: b.mock === true };
 }
 
 export async function analyzePhoto(imageBase64: string): Promise<VisionResult> {
