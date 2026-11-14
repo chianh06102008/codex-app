@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { PersistentWhiteFooter } from '@/components/floodscout/SharedPrimitives'
 import { AskScreen } from '@/components/floodscout/screens/AskScreen'
 import { HomeScreen } from '@/components/floodscout/screens/HomeScreen'
@@ -99,6 +99,7 @@ export function FloodScoutClientApp({
     initialSegments[0] ?? null,
   )
   const [hazards, setHazards] = useState<LiveHazardSnapshot | null>(null)
+  const [hazardsRefreshVersion, setHazardsRefreshVersion] = useState(0)
   const [hazardsLoading, setHazardsLoading] = useState(false)
 
   const [originPlace, setOriginPlace] = useState<GeocodePlace>(INITIAL_ORIGIN)
@@ -139,26 +140,59 @@ export function FloodScoutClientApp({
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  const [warningLocation, setWarningLocation] = useState<{ lat: number; lon: number } | null>(null)
+  useEffect(() => {
+    if (!preciseLocationConsent || !navigator.geolocation) {
+      setWarningLocation(null)
+      return
+    }
+    const watch = navigator.geolocation.watchPosition(({ coords }) => {
+      setWarningLocation((previous) => {
+        const next = { lat: Number(coords.latitude.toFixed(3)), lon: Number(coords.longitude.toFixed(3)) }
+        return previous?.lat === next.lat && previous.lon === next.lon ? previous : next
+      })
+    }, () => setWarningLocation(null), { maximumAge: 60_000, timeout: 12_000 })
+    return () => navigator.geolocation.clearWatch(watch)
+  }, [preciseLocationConsent])
+
   const includeOptional = enabledSources.nasaEonet || enabledSources.usgsQuakes
 
-  const refreshHazards = useCallback(async () => {
+  const refreshHazards = useCallback(async (signal?: AbortSignal) => {
     setHazardsLoading(true)
     try {
-      const res = await fetch(`/runtime/hazards?optional=${includeOptional ? '1' : '0'}`)
+      const query = new URLSearchParams({ optional: includeOptional ? '1' : '0' })
+      if (preciseLocationConsent && warningLocation) {
+        query.set('lat', String(warningLocation.lat))
+        query.set('lon', String(warningLocation.lon))
+      }
+      const res = await fetch(`/runtime/hazards?${query}`, { cache: 'no-store', signal })
+
       if (res.ok) {
         const snap = (await res.json()) as LiveHazardSnapshot
+        if (signal?.aborted) return
         setHazards(snap)
         if (snap.segments.length > 0) setSegments(snap.segments)
         if (snap.reports.length > 0) setReports(snap.reports)
+      } else if (!signal?.aborted) {
+        setHazards(null)
       }
+    } catch {
+      if (!signal?.aborted) setHazards(null)
     } finally {
-      setHazardsLoading(false)
+      if (!signal?.aborted) setHazardsLoading(false)
     }
-  }, [includeOptional])
+  }, [includeOptional, preciseLocationConsent, warningLocation])
 
   useEffect(() => {
-    refreshHazards()
-  }, [refreshHazards])
+    const controller = new AbortController()
+    setHazards(null)
+    void refreshHazards(controller.signal)
+    const timer = window.setInterval(() => void refreshHazards(controller.signal), 120_000)
+    return () => {
+      controller.abort()
+      window.clearInterval(timer)
+    }
+  }, [refreshHazards, hazardsRefreshVersion])
 
   useEffect(() => {
     document.title = 'FloodScout VN'
@@ -210,6 +244,7 @@ export function FloodScoutClientApp({
           originText: orig.address || orig.label,
           destinationText: dest.address || dest.label,
           mode: travelMode,
+          lang,
         }
         if (!Number.isNaN(orig.lon) && !Number.isNaN(orig.lat)) {
           payloadBody.originPlace = orig
@@ -229,22 +264,30 @@ export function FloodScoutClientApp({
           setOriginPlace(computed.origin)
           setDestinationPlace(computed.destination)
           navigate(computed.status)
+        } else {
+          showToast(lang === 'vi' ? 'Không thể tính tuyến. Hãy kiểm tra điểm đi và điểm đến.' : 'Could not plan a route. Check the origin and destination.')
         }
+      } catch {
+        showToast(lang === 'vi' ? 'Không thể kết nối dịch vụ tìm đường.' : 'The route service could not be reached.')
       } finally {
         setComputingRoute(false)
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [originPlace, destinationPlace, travelMode],
+    [originPlace, destinationPlace, travelMode, lang],
   )
+
+  const automaticRouteRequested = useRef(false)
 
   // If user enters #route-found or #route-blocked directly via URL hash, compute default route automatically
   useEffect(() => {
     if (
       (currentScreen === 'route-found' || currentScreen === 'route-blocked') &&
       !routeResult &&
-      !computingRoute
+      !computingRoute &&
+      !automaticRouteRequested.current
     ) {
+      automaticRouteRequested.current = true
       handleComputeSafeRoute()
     }
   }, [currentScreen, routeResult, computingRoute, handleComputeSafeRoute])
@@ -303,7 +346,7 @@ export function FloodScoutClientApp({
           hazardsLoading={hazardsLoading}
           enabledSources={enabledSources}
           onChangeEnabledSources={setEnabledSources}
-          onRefreshHazards={refreshHazards}
+          onRefreshHazards={() => setHazardsRefreshVersion((version) => version + 1)}
           onSelectSegment={handleSelectSegment}
           onNavigate={navigate}
         />

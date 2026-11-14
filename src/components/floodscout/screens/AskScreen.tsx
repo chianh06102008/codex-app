@@ -1,5 +1,6 @@
 'use client'
 
+import { VoiceDestination } from '@/components/floodscout/VoiceDestination'
 import React, { useEffect, useState } from 'react'
 import {
   ButtonPrimary,
@@ -191,6 +192,7 @@ export function AskScreen({
 
   const modes: Array<{ id: TravelMode; labelVi: string; labelEn: string }> = [
     { id: 'motorbike', labelVi: 'Xe máy', labelEn: 'Motorbike' },
+    { id: 'bicycle', labelVi: 'Xe đạp', labelEn: 'Bicycle' },
     { id: 'walk', labelVi: 'Đi bộ', labelEn: 'Walk' },
     { id: 'car', labelVi: 'Ô tô', labelEn: 'Car' },
   ]
@@ -349,6 +351,11 @@ export function AskScreen({
               </div>
             ) : null}
           </div>
+
+          <VoiceDestination key={lang} lang={lang} onDestination={(destination) => {
+            setDestQuery(destination)
+            setFocusedField('dest')
+          }} />
 
           {/* One-Tap Real Hanoi Test Corridors */}
           <div data-gsap="stagger" className="flex flex-col gap-[6px] w-full">

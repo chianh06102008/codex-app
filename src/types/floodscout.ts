@@ -11,7 +11,7 @@ export type ScreenId =
 
 export type Language = 'vi' | 'en'
 export type TextSize = 'default' | 'large' | 'xlarge'
-export type TravelMode = 'motorbike' | 'walk' | 'car'
+export type TravelMode = 'motorbike' | 'bicycle' | 'walk' | 'car'
 export type DepthCategory = 'ankle' | 'wheel' | 'unsure'
 export type HazardKind = 'urban-flood' | 'flash-flood' | 'landslide' | 'river-overflow'
 export type RiskStatus = 'avoid' | 'caution' | 'unknown' | 'normal'
@@ -120,6 +120,7 @@ export interface ExternalHazardPoint {
 }
 
 export interface CompiledAreaBulletin {
+  sourceUrl: string
   headlineVi: string
   headlineEn: string
   issuerVi: string
@@ -148,7 +149,8 @@ export interface LiveHazardSnapshot {
   usgsQuakes: ExternalHazardPoint[]
   segments: HazardSegmentDTO[]
   reports: FloodReportDTO[]
-  bulletin: CompiledAreaBulletin
+  bulletin: CompiledAreaBulletin | null
+  officialStatus: 'active' | 'dry' | 'unmatched' | 'unavailable'
 }
 
 export interface GeocodePlace {

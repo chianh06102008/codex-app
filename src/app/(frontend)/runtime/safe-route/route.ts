@@ -1,3 +1,4 @@
+import { chooseEquivalentRoute } from '@/lib/floodscout-ai'
 import { NextResponse } from 'next/server'
 import {
   computeReportFreshness,
@@ -22,13 +23,6 @@ const DEFAULT_DEST: GeocodePlace = {
   district: 'Quận Thanh Xuân, Hà Nội',
   lon: 105.8042,
   lat: 21.0016,
-}
-
-function metersBetween(a: [number, number], b: [number, number]): number {
-  const cosLat = Math.cos(((a[1] + b[1]) * 0.5 * Math.PI) / 180)
-  const dx = (b[0] - a[0]) * 111_320 * cosLat
-  const dy = (b[1] - a[1]) * 110_540
-  return Math.hypot(dx, dy)
 }
 
 function pointToSegmentMeters(
@@ -58,15 +52,17 @@ function routeIntersectsPolyline(
   thresholdMeters = 26,
 ): boolean {
   if (routeCoords.length === 0 || hazardCoords.length === 0) return false
-  if (hazardCoords.length === 1) {
-    return routeCoords.some((pt) => metersBetween(pt, hazardCoords[0]) <= thresholdMeters)
-  }
-  for (let i = 0; i < routeCoords.length; i++) {
-    const rPt = routeCoords[i]
-    for (let j = 0; j < hazardCoords.length - 1; j++) {
-      if (pointToSegmentMeters(rPt, hazardCoords[j], hazardCoords[j + 1]) <= thresholdMeters) {
-        return true
-      }
+  const cross = (a: [number, number], b: [number, number], c: [number, number]) =>
+    (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+  for (let i = 0; i < Math.max(1, routeCoords.length - 1); i++) {
+    const a = routeCoords[i]
+    const b = routeCoords[i + 1] ?? a
+    for (let j = 0; j < Math.max(1, hazardCoords.length - 1); j++) {
+      const c = hazardCoords[j]
+      const d = hazardCoords[j + 1] ?? c
+      if (cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0) return true
+      if (pointToSegmentMeters(a, c, d) <= thresholdMeters || pointToSegmentMeters(b, c, d) <= thresholdMeters
+        || pointToSegmentMeters(c, a, b) <= thresholdMeters || pointToSegmentMeters(d, a, b) <= thresholdMeters) return true
     }
   }
   return false
@@ -74,16 +70,16 @@ function routeIntersectsPolyline(
 
 async function geocodeTextIfNeeded(text: string, fallback: GeocodePlace): Promise<GeocodePlace> {
   const clean = text.trim()
-  if (!clean || clean === 'Vị trí hiện tại' || clean === 'Current location') {
+  if (!clean) {
     return fallback
   }
-  if (clean.toLowerCase().includes('biblio')) {
+  if (clean.toLowerCase() === 'biblio') {
     return DEFAULT_DEST
   }
 
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-      clean.includes('Hà Nội') || clean.includes('Hòa Bình') ? clean : `${clean}, Hà Nội`,
+      clean,
     )}&countrycodes=vn&limit=1&addressdetails=1&accept-language=vi`
     const r = await fetch(url, {
       headers: { 'User-Agent': 'FloodScoutVN/2.0 (safe-routing)' },
@@ -107,44 +103,61 @@ async function geocodeTextIfNeeded(text: string, fallback: GeocodePlace): Promis
   } catch {
     // Fallback
   }
-  return { ...fallback, label: clean }
+  throw new Error('Address could not be resolved')
 }
 
-interface CandidateOsrmRoute {
+interface RouteCandidate {
   coordinates: Array<[number, number]>
   distanceKm: number
   durationMin: number
   streetSummary: string
 }
 
-async function fetchOsrmRoutes(
+async function fetchRoutes(
   waypoints: Array<[number, number]>,
   mode: TravelMode,
   alternatives = false,
-): Promise<CandidateOsrmRoute[]> {
+  lang = 'vi',
+  exclusions: Array<[number, number]> = [],
+): Promise<RouteCandidate[]> {
   try {
-    const profile = mode === 'walk' ? 'foot' : 'driving'
-    const coordStr = waypoints.map((w) => `${w[0]},${w[1]}`).join(';')
-    const url = `https://router.project-osrm.org/route/v1/${profile}/${coordStr}?overview=full&geometries=geojson&steps=true&alternatives=${
-      alternatives ? 'true' : 'false'
-    }`
-    const r = await fetch(url, { signal: AbortSignal.timeout(5500) })
-    if (!r.ok) return []
-    const j = await r.json()
-    return (Array.isArray(j?.routes) ? j.routes : []).map((rt: any) => {
-      const steps = (rt.legs ?? []).flatMap((l: any) => l.steps ?? [])
-      const uniqueStreets = Array.from(
-        new Set(
-          steps.map((s: any) => String(s.name || '').trim()).filter((n: string) => n.length > 1),
-        ),
-      ).slice(0, 4)
-      const speedAdjust = mode === 'motorbike' ? 0.85 : 1
-      return {
-        coordinates: rt.geometry?.coordinates ?? [],
-        distanceKm: Number(((rt.distance ?? 1000) / 1000).toFixed(2)),
-        durationMin: Math.max(2, Math.round(((rt.duration ?? 180) * speedAdjust) / 60)),
-        streetSummary: uniqueStreets.join(' → ') || 'Tuyến đường nội đô',
+    const costing = { car: 'auto', bicycle: 'bicycle', walk: 'pedestrian', motorbike: 'motor_scooter' }[mode]
+    const base = process.env.APP_ROUTING_BASE_URL || 'https://valhalla1.openstreetmap.de'
+    const options = {
+      locations: waypoints.map(([lon, lat]) => ({ lon, lat })),
+      costing,
+      alternates: alternatives ? 2 : 0,
+      exclude_locations: exclusions.map(([lon, lat]) => ({ lon, lat })),
+      format: 'osrm',
+      shape_format: 'geojson',
+      units: 'kilometers',
+      language: lang === 'vi' ? 'vi-VN' : 'en-US',
+    }
+    const url = new URL('route', base.replace(/\/?$/, '/'))
+    url.searchParams.set('json', JSON.stringify(options))
+    const response = await fetch(url, { signal: AbortSignal.timeout(6500) })
+    if (!response.ok) return []
+    const data = await response.json()
+    const routes: unknown[] = Array.isArray(data.routes) ? data.routes : []
+    return routes.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return []
+      const route = entry as {
+        distance: number
+        duration: number
+        geometry?: { coordinates?: Array<[number, number]> }
+        legs?: Array<{ steps?: Array<{ name?: string }> }>
       }
+      const coordinates = route.geometry?.coordinates
+      if (!Number.isFinite(route.distance) || !Number.isFinite(route.duration)
+        || !Array.isArray(coordinates) || coordinates.length < 2
+        || !coordinates.every((point) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite))) return []
+      const streets = (route.legs ?? []).flatMap((leg) => (leg.steps ?? []).map((step) => step.name).filter(Boolean))
+      return [{
+        coordinates,
+        distanceKm: route.distance / 1000,
+        durationMin: Math.max(1, Math.round(route.duration / 60)),
+        streetSummary: [...new Set(streets)].slice(0, 5).join(' · '),
+      }]
     })
   } catch {
     return []
@@ -154,8 +167,9 @@ async function fetchOsrmRoutes(
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const mode: TravelMode = body?.mode === 'walk' || body?.mode === 'car' ? body.mode : 'motorbike'
+    const mode: TravelMode = body?.mode === 'walk' || body?.mode === 'car' || body?.mode === 'bicycle' ? body.mode : 'motorbike'
 
+    const lang = body?.lang === 'en' ? 'en' : 'vi'
     const origin: GeocodePlace =
       body?.originPlace && typeof body.originPlace.lon === 'number'
         ? body.originPlace
@@ -179,7 +193,7 @@ export async function POST(request: Request) {
 
     const rainPeak = Math.max(
       0,
-      ...((rainRaw?.hourly?.precipitation as number[] | undefined)?.slice(0, 12) ?? [2]),
+      ...((rainRaw?.hourly?.precipitation as number[] | undefined)?.slice(0, 12) ?? []),
     )
 
     const activeReports = rawReports
@@ -250,7 +264,7 @@ export async function POST(request: Request) {
     const destDirectlyInFlood = hazardZones.filter(
       (hz) => hz.severity === 'avoid' && routeIntersectsPolyline([endPt], hz.coords, 28),
     )
-    if (destDirectlyInFlood.length > 0 && mode !== 'car') {
+    if (destDirectlyInFlood.length > 0) {
       const blockedResp: SafeRouteResponse = {
         status: 'route-blocked',
         origin,
@@ -272,31 +286,16 @@ export async function POST(request: Request) {
       return NextResponse.json(blockedResp)
     }
 
-    const directCandidates = await fetchOsrmRoutes([startPt, endPt], mode, true)
+    const directCandidates = await fetchRoutes([startPt, endPt], mode, true, lang)
 
-    const midLon = (startPt[0] + endPt[0]) / 2
-    const midLat = (startPt[1] + endPt[1]) / 2
-    const span = Math.max(
-      0.009,
-      Math.min(0.032, Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]) * 0.8),
-    )
-
-    const detourWaypoints: Array<[number, number]> = [
-      [105.8062, 21.0068], // North corridor via Đường Láng / Lê Văn Thiêm / Nhân Chính
-      [105.7925, 21.0055], // West-North corridor via Trần Duy Hưng / Hoàng Minh Giám
-      [midLon, midLat + span],
-      [midLon, midLat - span],
-      [midLon - span, midLat + span * 0.7],
-      [midLon + span, midLat - span * 0.7],
-    ]
-
-    const detourResults = await Promise.all(
-      detourWaypoints.map((wp) => fetchOsrmRoutes([startPt, wp, endPt], mode, false)),
-    )
-
-    const allCandidates = [...directCandidates, ...detourResults.flat()].filter(
-      (c) => c.coordinates.length >= 2,
-    )
+    const exclusions = hazardZones
+      .filter((hazard) => hazard.severity === 'avoid' && hazard.coords.length > 0
+        && directCandidates.some((candidate) => routeIntersectsPolyline(candidate.coordinates, hazard.coords)))
+      .flatMap((hazard) => [hazard.coords[0], hazard.coords[Math.floor(hazard.coords.length / 2)], hazard.coords[hazard.coords.length - 1]])
+      .slice(0, 40)
+    const detours = exclusions.length ? await fetchRoutes([startPt, endPt], mode, true, lang, exclusions) : []
+    const allCandidates = [...directCandidates, ...detours]
+    if (!allCandidates.length) return NextResponse.json({ error: 'No routes available from provider' }, { status: 502 })
 
     const evaluated = allCandidates.map((cand) => {
       const hitAvoid = hazardZones.filter(
@@ -323,16 +322,22 @@ export async function POST(request: Request) {
 
     evaluated.sort((a, b) => a.riskPenalty - b.riskPenalty)
 
-    const best = evaluated[0]
+    const viable = evaluated.filter((route) => route.hitAvoid.length === 0)
+      .sort((a, b) => a.hitCaution.length - b.hitCaution.length || a.cand.distanceKm - b.cand.distanceKm || a.cand.durationMin - b.cand.durationMin)
+    const first = viable[0]
+    const equivalent = first ? viable.filter((route) => route.hitCaution.length === first.hitCaution.length
+      && route.cand.distanceKm === first.cand.distanceKm) : []
+    const choice = await chooseEquivalentRoute(equivalent.map(({ cand }) => ({
+      distanceKm: cand.distanceKm, durationMin: cand.durationMin,
+    })), lang)
+    const best = equivalent[choice] ?? first
     const directFirst = directCandidates[0]
     const directHits = directFirst
       ? hazardZones.filter((hz) => routeIntersectsPolyline(directFirst.coordinates, hz.coords, 26))
       : []
 
-    if (!best || (best.hitAvoid.length > 0 && mode !== 'car')) {
-      const blocking = best?.hitAvoid.length
-        ? best.hitAvoid
-        : hazardZones.filter((h) => h.severity === 'avoid').slice(0, 2)
+    if (!best) {
+      const blocking = evaluated[0]?.hitAvoid ?? []
       const blockedResp: SafeRouteResponse = {
         status: 'route-blocked',
         origin,
@@ -356,17 +361,7 @@ export async function POST(request: Request) {
       return NextResponse.json(blockedResp)
     }
 
-    const avoidedList =
-      directHits.length > 0
-        ? directHits
-        : hazardZones
-            .filter(
-              (hz) =>
-                hz.severity === 'avoid' &&
-                !best.hitAvoid.some((b) => b.id === hz.id) &&
-                metersBetween(hz.coords[0], startPt) < 4500,
-            )
-            .slice(0, 2)
+    const avoidedList = directFirst !== best.cand ? directHits : []
 
     const okResp: SafeRouteResponse = {
       status: 'route-found',

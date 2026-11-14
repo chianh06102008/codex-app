@@ -7,6 +7,7 @@ import { ASSETS } from '@/lib/assets'
 import type { CompiledAreaBulletin, Language, ScreenId, TravelMode } from '@/types/floodscout'
 
 export function getTravelModeLabel(mode: TravelMode, lang: Language): string {
+  if (mode === 'bicycle') return lang === 'vi' ? 'Xe đạp' : 'Bicycle'
   if (lang === 'en') {
     if (mode === 'motorbike') return 'Motorbike'
     if (mode === 'walk') return 'Walk'
@@ -160,21 +161,12 @@ export function StatusBandFull({
   bulletin?: CompiledAreaBulletin | null
   onOpenBulletin?: () => void
 }) {
+  if (!bulletin) return null
   const overline = lang === 'vi' ? 'CẢNH BÁO CHÍNH THỨC & KHU VỰC' : 'OFFICIAL & REGIONAL WARNING'
-  const title = bulletin
-    ? lang === 'vi'
-      ? bulletin.headlineVi
-      : bulletin.headlineEn
-    : lang === 'vi'
-      ? 'Cảnh báo mưa lớn, ngập đô thị & sạt lở Hà Nội – Hòa Bình'
-      : 'Heavy rain, urban flood & landslide watch — Hanoi & Hòa Bình'
-  const sourceAndTime = bulletin
-    ? lang === 'vi'
-      ? `${bulletin.issuerVi} · Phát hành ${bulletin.issuedAtFormatted} · hiệu lực đến ${bulletin.validUntilFormatted}`
-      : `${bulletin.issuerEn} · Issued ${bulletin.issuedAtFormatted} · until ${bulletin.validUntilFormatted}`
-    : lang === 'vi'
-      ? 'Trung tâm Dự báo KTTV Quốc gia · Đang đồng bộ thời gian thực'
-      : 'NCHMF · Syncing live timestamps'
+  const title = lang === 'vi' ? bulletin.headlineVi : bulletin.headlineEn
+  const sourceAndTime = lang === 'vi'
+    ? `${bulletin.issuerVi} · ${bulletin.issuedAtFormatted}`
+    : `${bulletin.issuerEn} · ${bulletin.issuedAtFormatted}`
 
   return (
     <div
@@ -212,20 +204,9 @@ export function StatusBandCompact({
   bulletin?: CompiledAreaBulletin | null
   onOpenBulletin?: () => void
 }) {
-  const title = bulletin
-    ? lang === 'vi'
-      ? bulletin.headlineVi
-      : bulletin.headlineEn
-    : lang === 'vi'
-      ? 'Cảnh báo mưa lớn & ngập cục bộ đang có hiệu lực'
-      : 'Heavy rain & localized flood warning in force'
-  const meta = bulletin
-    ? lang === 'vi'
-      ? `${bulletin.issuerVi} · Cập nhật ${bulletin.fetchedAtFormatted} · Xem chi tiết`
-      : `${bulletin.issuerEn} · Updated ${bulletin.fetchedAtFormatted} · Details`
-    : lang === 'vi'
-      ? 'Trung tâm Dự báo KTTV Quốc gia · Xem bản tin gốc'
-      : 'NCHMF · View original bulletin'
+  if (!bulletin) return null
+  const title = lang === 'vi' ? bulletin.headlineVi : bulletin.headlineEn
+  const meta = lang === 'vi' ? bulletin.issuerVi : bulletin.issuerEn
 
   const content = (
     <>

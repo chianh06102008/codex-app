@@ -148,7 +148,7 @@ export function RouteResultScreen({
                     {lang === 'vi' ? 'Đoạn đã tránh' : 'Avoided'}
                   </span>
                   <span className="font-['Plus_Jakarta_Sans:Bold'] font-bold text-[19px] text-[#191b14]">
-                    {Math.max(1, routeResult.avoidedHazards.length)}
+                    {routeResult.avoidedHazards.length}
                   </span>
                 </div>
                 <div className="bg-[#eceee6] rounded-[15px] px-[10px] py-[9px] flex flex-col justify-between">
@@ -216,8 +216,8 @@ export function RouteResultScreen({
                 </h2>
                 <p className="font-['Plus_Jakarta_Sans:Regular'] text-[14px] text-[#5d6157]">
                   {lang === 'vi'
-                    ? 'Điểm đến hoặc mọi tuyến tiếp cận đều cắt qua vùng ngập sâu / hầm chui / sạt lở.'
-                    : 'Destination or all access roads cross deep flood, underpass, or landslide zones.'}
+                    ? 'Không tìm được tuyến phù hợp với phương tiện và dữ liệu đường hiện có.'
+                    : 'No route matched your travel mode and the available road data.'}
                 </p>
               </div>
 

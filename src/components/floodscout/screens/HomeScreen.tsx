@@ -54,24 +54,27 @@ const LEGEND_ITEMS = [
   {
     id: 'avoid',
     icon: ASSETS.dotAvoid,
+    style: 'border-red-300 bg-red-50 text-red-900',
     labelVi: 'Tránh (Ngập sâu / Sạt lở)',
     labelEn: 'Avoid (Deep flood / Landslide)',
     descVi:
       'Ngập ngang bánh xe, hầm chui ngập nhanh hoặc cảnh báo sạt lở đất. Tuyến đi loại trừ hoàn toàn cho xe máy và đi bộ.',
     descEn:
-      'Wheel-deep floodwater, flooded underpasses, or landslide corridors. Strictly excluded from motorbike and walking routes.',
+      'Wheel-deep floodwater, flooded underpasses, or landslide corridors. Excluded from route suggestions for every travel mode.',
   },
   {
     id: 'caution',
     icon: ASSETS.dotCaution,
+    style: 'border-amber-300 bg-amber-50 text-amber-950',
     labelVi: 'Không nên đi',
-    labelEn: 'Caution',
+    labelEn: 'Do not enter if avoidable',
     descVi: 'Mặt đường đọng nước ngang mắt cá hoặc vùng cảnh báo lũ quét sườn dốc.',
     descEn: 'Ankle-deep street water or hillside flash-flood watch corridor.',
   },
   {
     id: 'unknown',
     icon: ASSETS.dotUnknown,
+    style: 'border-slate-300 bg-slate-100 text-slate-800',
     labelVi: 'Chưa rõ',
     labelEn: 'Unclear',
     descVi: 'Chưa đủ căn cứ hoặc mất kết nối bản tin chính thức. Không bao giờ coi là an toàn.',
@@ -80,6 +83,7 @@ const LEGEND_ITEMS = [
   {
     id: 'none',
     icon: ASSETS.dotNoAdverse,
+    style: 'border-stone-300 bg-white text-stone-800',
     labelVi: 'Chưa thấy dấu hiệu bất lợi',
     labelEn: 'No adverse signs',
     descVi: 'Chưa ghi nhận báo cáo ngập gần đây. Đây không phải xác nhận an toàn.',
@@ -116,7 +120,6 @@ export function HomeScreen({
 
   const [layersOpen, setLayersOpen] = useState(false)
   const [selectedLegendId, setSelectedLegendId] = useState<string | null>(null)
-  const [voiceListening, setVoiceListening] = useState(false)
   const [activePreset, setActivePreset] = useState<MapCameraPreset>('pilot')
   const [radarFrameIdx, setRadarFrameIdx] = useState<number | undefined>(undefined)
 
@@ -130,14 +133,6 @@ export function HomeScreen({
       : radarFrames.length > 0
         ? radarFrames.length - 1
         : 0
-
-  const handleMicTap = () => {
-    setVoiceListening(true)
-    window.setTimeout(() => {
-      setVoiceListening(false)
-      onNavigate('ask')
-    }, 550)
-  }
 
   const handlePreset = (preset: MapCameraPreset) => {
     setActivePreset(preset)
@@ -201,7 +196,7 @@ export function HomeScreen({
           {officialFeedDegraded ? (
             <StatusBandDegraded
               lang={lang}
-              lastFetchedTime={hazards?.bulletin.fetchedAtFormatted}
+              lastFetchedTime={hazards?.bulletin?.fetchedAtFormatted}
               onRetry={() => {
                 onChangeOfficialFeedDegraded(false)
                 onRefreshHazards()
@@ -218,7 +213,7 @@ export function HomeScreen({
 
         {/* Legend Chips */}
         <div className="pointer-events-auto mt-[8px] w-full overflow-x-auto no-scrollbar px-[16px] py-[2px]">
-          <div className="flex gap-[8px] items-center w-max">
+          <div className="flex flex-wrap gap-2 items-center">
             {LEGEND_ITEMS.map((chip) => {
               const isSelected = selectedLegendId === chip.id
               return (
@@ -226,12 +221,13 @@ export function HomeScreen({
                   key={chip.id}
                   type="button"
                   onClick={() => setSelectedLegendId((prev) => (prev === chip.id ? null : chip.id))}
-                  className={`bg-white flex gap-[8px] items-center min-h-[38px] pl-[13px] pr-[15px] rounded-[999px] shadow-[0px_4px_14px_rgba(26,28,20,0.08)] shrink-0 transition ${
-                    isSelected ? 'ring-2 ring-[#191b14]' : 'hover:bg-[#fafaf7]'
+                  aria-pressed={isSelected}
+                  className={`${chip.style} border flex gap-[8px] items-center min-h-[38px] pl-[13px] pr-[15px] rounded-[999px] shadow-[0px_4px_14px_rgba(26,28,20,0.08)] shrink-0 transition ${
+                    isSelected ? 'ring-2 ring-[#191b14]' : 'hover:brightness-95'
                   }`}
                 >
                   <Image src={chip.icon} alt="" width={10} height={10} className="shrink-0" />
-                  <span className="font-['Plus_Jakarta_Sans:SemiBold'] font-semibold leading-[19px] text-[#191b14] text-[13px] whitespace-nowrap">
+                  <span className="font-['Plus_Jakarta_Sans:SemiBold'] font-semibold leading-[19px] text-[13px] whitespace-nowrap">
                     {lang === 'vi' ? chip.labelVi : chip.labelEn}
                   </span>
                 </button>
@@ -263,8 +259,8 @@ export function HomeScreen({
                   : 'Syncing live APIs...'
                 : hazards
                   ? lang === 'vi'
-                    ? `${activeSourceCount} API · Mưa 24h: ${hazards.weather.totalNext24hMm} mm · ${segments.length} tuyến cảnh báo`
-                    : `${activeSourceCount} APIs · 24h: ${hazards.weather.totalNext24hMm} mm · ${segments.length} corridors`
+                    ? `${activeSourceCount} API · Mưa 24h: ${hazards.weather.hourlySlice.length ? hazards.weather.totalNext24hMm + ' mm' : '—'} · ${segments.length} đoạn đường theo dõi`
+                    : `${activeSourceCount} APIs · 24h: ${hazards.weather.hourlySlice.length ? hazards.weather.totalNext24hMm + ' mm' : '—'} · ${segments.length} corridors`
                   : lang === 'vi'
                     ? 'Đang tải dữ liệu...'
                     : 'Loading...'}
@@ -331,11 +327,7 @@ export function HomeScreen({
             {lang === 'vi' ? 'Đi đường này?' : 'Compute safest route?'}
           </h2>
           <p className="font-['Plus_Jakarta_Sans:Regular'] leading-[19px] text-[#5d6157] text-[13px]">
-            {voiceListening
-              ? lang === 'vi'
-                ? 'Đang nghe điểm đến của bạn...'
-                : 'Listening for destination...'
-              : lang === 'vi'
+            {lang === 'vi'
                 ? `Từ ${originPlace.label.split('·')[0].trim()} · Tránh tự động các đoạn ngập, lũ quét & sạt lở.`
                 : `From ${originPlace.label.split('·')[0].trim()} · Automatically routes around flood & landslide corridors.`}
           </p>
@@ -354,7 +346,7 @@ export function HomeScreen({
                 : 'Enter starting point & destination...'}
             </span>
           </button>
-          <MicButton size={48} lang={lang} isRecording={voiceListening} onClick={handleMicTap} />
+          <MicButton size={48} lang={lang} onClick={() => onNavigate('ask')} />
         </div>
       </div>
 
@@ -496,8 +488,8 @@ export function HomeScreen({
                   title: 'Open-Meteo Flood',
                   desc:
                     lang === 'vi'
-                      ? `Lưu lượng Sông Hồng: ${hazards?.flood.latestM3s ?? '--'} m³/s`
-                      : `Red River discharge: ${hazards?.flood.latestM3s ?? '--'} m³/s`,
+                      ? `Lưu lượng Sông Hồng: ${hazards?.flood.daily.length ? hazards.flood.latestM3s : '--'} m³/s`
+                      : `Red River discharge: ${hazards?.flood.daily.length ? hazards.flood.latestM3s : '--'} m³/s`,
                 },
                 {
                   key: 'gdacs' as const,
