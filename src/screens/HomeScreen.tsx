@@ -40,6 +40,7 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
   const view = summarizeOfficial(official);
 
   const [layersOpen, setLayersOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState<SegmentStateKey | null>(null);
   const openLegend = LEGEND.find((l) => l.state === legendOpen);
 
@@ -147,14 +148,29 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 
       {/* Bottom sheet: the one main action, in the thumb zone. */}
       <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={styles.grabber} />
-        <View style={styles.sheetHeading}>
-          <T t="title" w="bold" accessibilityRole="header">{s.askHeading}</T>
-          <T t="small" color={COLORS.inkSoft}>{sheetLine}</T>
-          <T t="tiny" color={COLORS.inkSoft}>{mr.pilotArea}</T>
-        </View>
-
-        <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} />
+        {/* Tap the handle to fold the panel away and see the map. */}
+        <Pressable
+          onPress={() => setSheetOpen((o) => !o)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: sheetOpen }}
+          hitSlop={12}
+          style={styles.handleRow}
+        >
+          <View style={styles.grabber} />
+          <View style={styles.handleLabel}>
+            <Icon source={sheetOpen ? 'chevron-down' : 'chevron-up'} size={18} color={COLORS.inkSoft} />
+            <T t="tiny" w="semibold" color={COLORS.inkSoft}>{sheetOpen ? mr.near_show_map : mr.near_show_panel}</T>
+          </View>
+        </Pressable>
+        {sheetOpen && (
+          <>
+            <View style={styles.sheetHeading}>
+              <T t="title" w="bold" accessibilityRole="header">{s.askHeading}</T>
+              <T t="small" color={COLORS.inkSoft}>{sheetLine}</T>
+            </View>
+            <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} />
+          </>
+        )}
 
         <Pressable
           onPress={() => go('ask')}
@@ -209,6 +225,8 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
 }
 
 const styles = StyleSheet.create({
+  handleRow: { alignItems: 'center', gap: 4, paddingVertical: 2 },
+  handleLabel: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   screen: { flex: 1, backgroundColor: COLORS.mapBackground },
   flex: { flex: 1 },
   pressed: { opacity: 0.75 },

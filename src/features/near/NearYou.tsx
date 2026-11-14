@@ -13,6 +13,7 @@ import type { LatLon, SegmentState } from '@/domain/types';
 import { useOfficialSource } from '@/features/fusion/officialSource';
 import { SEGMENTS, SLICE_REGION, distanceM, insideSlice } from '@/features/map/roads';
 import { STATE_STYLE } from '@/features/map/stateStyle';
+import { PILOT_PROVINCE } from '@/config';
 import { summarizeOfficial } from '@/features/official/officialView';
 import { COLORS, RADIUS } from '@/theme';
 
@@ -57,14 +58,15 @@ export function NearYou({ lang, states, onCheckRoute }: { lang: Lang; states: Ma
   }, [here, states, official.feedStatus, view.tone]);
 
   const tone = view.tone === 'warning' ? COLORS.warningBorder : view.tone === 'degraded' ? COLORS.inkSoft : STATE_STYLE.no_adverse_evidence.line;
+  const province = official.province ?? PILOT_PROVINCE;
   const officialLine =
-    view.tone === 'warning' ? c.near_official_warning : view.tone === 'calm' ? c.near_official_none : c.near_official_unknown;
+    view.tone === 'warning' ? c.near_official_warning(province) : view.tone === 'calm' ? c.near_official_none(province) : c.near_official_unknown;
 
   return (
     <View style={styles.card} accessibilityLiveRegion="polite">
       <View style={styles.head}>
         <Animated.View style={[styles.dot, { backgroundColor: tone, opacity: pulse }]} />
-        <T w="bold" style={styles.flex}>{c.near_title}</T>
+        <T w="bold" style={styles.flex} numberOfLines={1}>{official.province ? c.near_title_in(official.province) : c.near_title}</T>
         <Icon source="crosshairs-gps" size={18} color={COLORS.inkSoft} />
       </View>
 
@@ -73,6 +75,9 @@ export function NearYou({ lang, states, onCheckRoute }: { lang: Lang; states: Ma
       ) : (
         <>
           <T t="small" w="semibold" color={view.tone === 'warning' ? COLORS.warningInk : COLORS.ink}>{officialLine}</T>
+          {official.rain && (
+            <T t="small">{c.near_rain(official.rain.next3hMm, official.rain.maxProbability ?? '–')}</T>
+          )}
 
           {!near ? (
             <T t="small" color={COLORS.inkSoft}>

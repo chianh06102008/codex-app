@@ -13,10 +13,8 @@ const USE_OSM_TILES = Platform.OS !== 'ios';
 const ATTRIBUTION = USE_OSM_TILES ? MAP_TILE_ATTRIBUTION : '© OpenStreetMap contributors';
 import type { LatLon, OfficialStatement, SegmentState } from '@/domain/types';
 import { useOfficialSource } from '@/features/fusion/officialSource';
-import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION, distanceM } from './roads';
+import { SEGMENT_BY_ID, SLICE_POLYGON, SLICE_REGION } from './roads';
 
-/** Farther than this from the pilot slice, the map stays on the slice (there is nothing to show there). */
-const FOLLOW_MAX_M = 25_000;
 import { BRAND, STATE_STYLE } from './stateStyle';
 
 export type FloodMapProps = {
@@ -53,8 +51,6 @@ function FloodMapInner({
   const centered = useRef(false);
   useEffect(() => {
     if (centered.current || !userLocation || routes.length > 0) return;
-    const center = { latitude: SLICE_REGION.latitude, longitude: SLICE_REGION.longitude };
-    if (distanceM(userLocation, center) > FOLLOW_MAX_M) return;
     centered.current = true;
     mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.018, longitudeDelta: 0.018 }, 900);
   }, [userLocation, routes.length]);
@@ -80,7 +76,7 @@ function FloodMapInner({
         // iOS: Apple Maps, free, no key or developer account (muted so state colors stand out).
         // Android: the native map is Google, so OSM tiles replace it (no Google key needed).
         mapType={USE_OSM_TILES ? 'none' : 'mutedStandard'}
-        minZoomLevel={12}
+        minZoomLevel={5}
         maxZoomLevel={19}
         onPress={onPress ? (e: MapPressEvent) => onPress(e.nativeEvent.coordinate) : undefined}
         // Real position: the native blue dot (pulses on iOS). Needs location permission.

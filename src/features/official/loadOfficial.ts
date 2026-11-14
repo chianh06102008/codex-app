@@ -18,41 +18,83 @@ import pinned from '../../../fixtures/statements/2026-11-13_lqsl-984.json';
 
 const PINNED = pinned as unknown as OfficialStatement[];
 
-export function loadPinnedBulletin() {
-  const retrievedAt = PINNED.map((s) => s.retrieved_at).sort().at(-1) ?? null;
-  setOfficialSource({ feedStatus: 'last_known', statements: PINNED, retrievedAt, simulated: false });
+// Every bulletin received, before the province filter. The filter is re-applied when the
+// phone's province becomes known, so the order of the two fetches does not matter.
+let raw: { statements: OfficialStatement[]; feedStatus: 'ok' | 'last_known'; retrievedAt: string | null } = {
+  statements: PINNED,
+  feedStatus: 'last_known',
+  retrievedAt: PINNED.map((s) => s.retrieved_at).sort().at(-1) ?? null,
+};
+
+/** "Thành phố Hà Nội" / "Hanoi" / "TP. Hà Nội" -> "hanoi", for matching bulletin text. */
+export function provinceKey(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .replace(/\b(thanh pho|tinh|tp\.?|city|province)\b/g, '')
+    .replace(/[^a-z]/g, '');
 }
+
+function namesProvince(s: OfficialStatement, province: string): boolean {
+  const text = provinceKey([...(s.area_names ?? []), (s.instruction_text ?? '').split('\n')[0]].join(' '));
+  return text.includes(provinceKey(province));
+}
+
+function applyOfficial() {
+  const province = officialStore.get().province ?? PILOT_PROVINCE;
+  setOfficialSource({
+    feedStatus: raw.feedStatus,
+    statements: raw.statements.filter((s) => namesProvince(s, province)),
+    retrievedAt: raw.retrievedAt,
+    simulated: false,
+  });
+}
+
+export function loadPinnedBulletin() {
+  applyOfficial();
+}
+
+let retry: ReturnType<typeof setTimeout> | null = null;
 
 export async function refreshOfficial(): Promise<boolean> {
   const base = process.env.EXPO_PUBLIC_BULLETIN_SERVER_URL;
   if (!base) return false;
+  if (retry) clearTimeout(retry);
   try {
-    const res = await fetch(`${base.replace(/\/$/, '')}/api/official/recent?hours=24`, { signal: timeoutSignal(20000) });
-    if (!res.ok) return false;
+    // The server reads each NCHMF page on a cold cache: allow a full minute.
+    const res = await fetch(`${base.replace(/\/$/, '')}/api/official/recent?hours=24`, { signal: timeoutSignal(60000) });
+    if (!res.ok) throw new Error(String(res.status));
     const body = (await res.json()) as { retrieved_at?: string; statements?: OfficialStatement[] };
-    if (!Array.isArray(body.statements)) return false;
+    if (!Array.isArray(body.statements)) throw new Error('shape');
     // Parse failures come back without an issuer; keep only bulletins that were actually read.
-    // NCHMF bulletins are national. A statement with no geometry covers the whole pilot slice,
-    // so only bulletins that name the pilot province may enter (else Lâm Đồng would floor Đà Nẵng).
     const read = body.statements.filter((s) => s && s.id && s.issuer);
-    const statements = read.filter((s) => namesPilot(s));
-    // If any bulletin could not be read, the picture is incomplete: say "last known", not "ok".
-    const complete = read.length === body.statements.length;
-    setOfficialSource({
-      feedStatus: complete ? 'ok' : 'last_known',
-      statements,
+    // If any bulletin could not be read, the picture is incomplete: "last known", not "ok".
+    raw = {
+      statements: read,
+      feedStatus: read.length === body.statements.length ? 'ok' : 'last_known',
       retrievedAt: body.retrieved_at ?? new Date().toISOString(),
-      simulated: false,
-    });
+    };
+    applyOfficial();
     return true;
   } catch {
+    retry = setTimeout(() => void refreshOfficial(), 30000);
     return false;
   }
 }
 
-function namesPilot(s: OfficialStatement): boolean {
-  const text = [...(s.area_names ?? []), s.instruction_text ?? ''].join(' ');
-  return text.includes(PILOT_PROVINCE);
+async function detectProvince(p: { latitude: number; longitude: number }) {
+  try {
+    const [place] = await Location.reverseGeocodeAsync(p);
+    const province = place?.region || place?.city || place?.subregion;
+    if (province && province !== officialStore.get().province) {
+      setOfficialSource({ province });
+      applyOfficial();
+    }
+  } catch {
+    // Unknown province: the pilot province stays, and the UI names it.
+  }
 }
 
 /** The phone's position if permission is given; null otherwise (never blocks the app). */
@@ -72,6 +114,7 @@ export async function refreshRain(): Promise<void> {
   const here = (await currentPosition()) ?? null;
   if (here) {
     setOfficialSource({ userLocation: here });
+    void detectProvince(here);
     // Inside the pilot slice the trip starts where the phone is, unless the user already chose a start.
     if (insideSlice(here) && sessionStore.get().origin.kind === 'default') {
       updateSession({ origin: { point: here, label: '', kind: 'gps' } });
