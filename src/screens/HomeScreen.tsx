@@ -189,12 +189,12 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
               <T t="title" w="bold" accessibilityRole="header">{s.askHeading}</T>
               <T t="small" color={COLORS.inkSoft}>{sheetLine}</T>
             </View>
-            <NearYou lang={lang} states={states} onCheckRoute={() => go('ask')} onOpenLive={() => go('live')} />
+            <NearYou lang={lang} states={states} onCheckRoute={() => go('trip')} onOpenLive={() => go('live')} />
           </>
         )}
 
         <Pressable
-          onPress={() => go('ask')}
+          onPress={() => go('trip')}
           accessibilityRole="button"
           accessibilityLabel={`${s.askHeading} ${s.searchPlaceholder}`}
           style={({ pressed }) => [styles.search, pressed && styles.pressed]}

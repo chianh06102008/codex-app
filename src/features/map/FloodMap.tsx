@@ -34,6 +34,8 @@ export type FloodMapProps = {
   cornerRadius?: number;
   /** Extra map layers (live overlays on Home). */
   children?: ReactNode;
+  /** Zoom the map to show these points whenever they change (e.g. a planned trip). */
+  fitTo?: LatLon[] | null;
 };
 
 function FloodMapInner({
@@ -49,6 +51,7 @@ function FloodMapInner({
   height = 300,
   cornerRadius = 20,
   children,
+  fitTo,
 }: FloodMapProps) {
   // Start where the phone is. Until the first fix: all of Vietnam (never a fixed city).
   const mapRef = useRef<MapView>(null);
@@ -67,6 +70,12 @@ function FloodMapInner({
     centered.current = true;
     mapRef.current?.animateToRegion({ ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 900);
   }, [ready, userLocation, routes.length]);
+
+  useEffect(() => {
+    if (!ready || !fitTo || fitTo.length < 2) return;
+    centered.current = true;
+    mapRef.current?.fitToCoordinates(fitTo, { edgePadding: { top: 60, right: 40, bottom: 60, left: 40 }, animated: true });
+  }, [ready, fitTo]);
 
   // Draw only roads with adverse or uncertain evidence; the basemap shows the rest.
   // When the feed is down every road is uncertain: the area tint carries that instead.

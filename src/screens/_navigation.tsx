@@ -13,13 +13,14 @@ import { COLORS } from '@/theme';
 import { AskScreen } from './AskScreen';
 import { HomeScreen } from './HomeScreen';
 import { LiveScreen } from './LiveScreen';
+import { TripScreen } from './TripScreen';
 import { ReportScreen } from './ReportScreen';
 import { ResultScreen } from './ResultScreen';
 import { SegmentScreen } from './SegmentScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { WarningScreen, openOfficialLink, usePrimaryOfficialUrl } from './WarningScreen';
 
-export type Screen = 'home' | 'warning' | 'ask' | 'result' | 'segment' | 'report' | 'settings' | 'live';
+export type Screen = 'home' | 'warning' | 'ask' | 'result' | 'segment' | 'report' | 'settings' | 'live' | 'trip';
 
 export function Navigation({ lang }: { lang: Lang }) {
   // The last entry is the screen on show. Home is always at the bottom of the stack.
@@ -67,6 +68,7 @@ export function Navigation({ lang }: { lang: Lang }) {
   return (
     <Frame title={s.appName} backLabel={s.back} onBack={back}>
       {screen === 'live' && <LiveScreen lang={lang} />}
+      {screen === 'trip' && <TripScreen lang={lang} />}
       {screen === 'ask' && <AskScreen lang={lang} go={go} />}
       {screen === 'result' && <ResultScreen lang={lang} go={go} />}
       {screen === 'segment' && <SegmentScreen lang={lang} go={go} />}
