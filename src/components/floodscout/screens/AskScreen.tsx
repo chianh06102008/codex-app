@@ -119,6 +119,8 @@ export function AskScreen({
   const [originSuggestions, setOriginSuggestions] = useState<GeocodePlace[]>([])
   const [destSuggestions, setDestSuggestions] = useState<GeocodePlace[]>([])
   const [focusedField, setFocusedField] = useState<'origin' | 'dest' | null>(null)
+  const [suggestionStatus, setSuggestionStatus] = useState<'loading' | 'none' | 'unavailable' | null>(null)
+  const [gpsError, setGpsError] = useState(false)
   const [locatingGps, setLocatingGps] = useState(false)
 
   useEffect(() => {
@@ -129,42 +131,44 @@ export function AskScreen({
     setDestQuery(destinationPlace.label)
   }, [destinationPlace])
 
-  // Live Nominatim/Photon address autocomplete for Origin
+  const focusedQuery = focusedField === 'origin' ? originQuery : destQuery
   useEffect(() => {
-    if (focusedField !== 'origin') return
+    if (!focusedField) return
+    const setSuggestions = focusedField === 'origin' ? setOriginSuggestions : setDestSuggestions
+    const controller = new AbortController()
+    setSuggestions([])
+    setSuggestionStatus('loading')
     const timer = window.setTimeout(async () => {
       try {
-        const r = await fetch(`/runtime/geocode?q=${encodeURIComponent(originQuery)}`)
-        if (r.ok) {
-          const data = await r.json()
-          setOriginSuggestions(data.results ?? [])
-        }
+        const query = new URLSearchParams({ q: focusedQuery.trim() })
+        const response = await fetch(`/runtime/geocode?${query}`, { signal: controller.signal })
+        if (!response.ok) throw new Error('Geocoding unavailable')
+        const { results, unavailable } = await response.json()
+        if (controller.signal.aborted) return
+        setSuggestions(results ?? [])
+        setSuggestionStatus(unavailable ? 'unavailable' : results?.length ? null : 'none')
       } catch {
-        // Ignore
+        if (!controller.signal.aborted) setSuggestionStatus('unavailable')
       }
-    }, 240)
-    return () => window.clearTimeout(timer)
-  }, [originQuery, focusedField])
+    }, 220)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [focusedField, focusedQuery])
 
-  // Live Nominatim/Photon address autocomplete for Destination
-  useEffect(() => {
-    if (focusedField !== 'dest') return
-    const timer = window.setTimeout(async () => {
-      try {
-        const r = await fetch(`/runtime/geocode?q=${encodeURIComponent(destQuery)}`)
-        if (r.ok) {
-          const data = await r.json()
-          setDestSuggestions(data.results ?? [])
-        }
-      } catch {
-        // Ignore
-      }
-    }, 240)
-    return () => window.clearTimeout(timer)
-  }, [destQuery, focusedField])
+  const suggestionMessage = suggestionStatus === 'loading'
+    ? lang === 'vi' ? 'Đang tìm địa điểm…' : 'Searching for places…'
+    : suggestionStatus === 'unavailable'
+      ? lang === 'vi' ? 'Tạm thời không tải được gợi ý.' : 'Place suggestions are temporarily unavailable.'
+      : lang === 'vi' ? 'Không tìm thấy địa điểm.' : 'No matching places.'
 
   const handleUseGps = () => {
-    if (!navigator.geolocation) return
+    setGpsError(false)
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setGpsError(true)
+      return
+    }
     setLocatingGps(true)
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -179,11 +183,14 @@ export function AskScreen({
               setOriginQuery(data.place.label)
             }
           }
+        } catch {
+          setGpsError(true)
         } finally {
           setLocatingGps(false)
         }
       },
       () => {
+        setGpsError(true)
         setLocatingGps(false)
       },
       { timeout: 5000 },
@@ -265,30 +272,35 @@ export function AskScreen({
                     : 'Use live GPS'}
               </button>
             </div>
+            {gpsError && <p role="status" className="px-2 text-sm text-stone-700">{lang === 'vi' ? 'Vị trí cần kết nối HTTPS và quyền truy cập. Bạn có thể nhập điểm đi.' : 'Location requires HTTPS and permission. You can enter your origin.'}</p>}
             <input
               type="text"
               value={originQuery}
               onFocus={() => setFocusedField('origin')}
-              onBlur={() => window.setTimeout(() => setFocusedField(null), 180)}
+              onBlur={(event) => {
+                if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) setFocusedField(null)
+              }}
               onChange={(e) => setOriginQuery(e.target.value)}
               placeholder={
                 lang === 'vi'
                   ? 'Nhập số nhà, tên đường xuất phát...'
                   : 'Enter origin street or place...'
               }
-              className="bg-white border-[#dfe1d8] border-[1.5px] min-h-[54px] px-[16px] rounded-[999px] w-full font-['Plus_Jakarta_Sans:Regular'] text-[#191b14] text-[15px] outline-none focus:border-[#191b14]"
+              className="bg-white border-[#dfe1d8] border-[1.5px] min-h-[54px] px-[16px] rounded-[999px] w-full font-['Plus_Jakarta_Sans:Regular'] text-[#191b14] text-base outline-none focus:border-[#191b14]"
             />
             <p className="font-['Plus_Jakarta_Sans:Regular'] text-[12px] text-[#5d6157] px-[8px] truncate">
               {originPlace.address}
             </p>
 
+            {focusedField === 'origin' && suggestionStatus && <p role="status" className="px-2 text-sm text-stone-600">{suggestionMessage}</p>}
             {focusedField === 'origin' && originSuggestions.length > 0 ? (
-              <div className="absolute top-[82px] left-0 right-0 bg-white rounded-[20px] shadow-[0_12px_28px_rgba(26,28,20,0.16)] border border-[#dfe1d8] overflow-hidden z-40">
+              <div className="relative bg-white rounded-[20px] shadow-[0_12px_28px_rgba(26,28,20,0.16)] border border-[#dfe1d8] overflow-hidden z-40">
                 {originSuggestions.map((sug) => (
                   <button
                     key={sug.id}
                     type="button"
-                    onMouseDown={() => {
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => {
                       onChangeOriginPlace(sug)
                       setOriginQuery(sug.label)
                       setFocusedField(null)
@@ -316,24 +328,28 @@ export function AskScreen({
               type="text"
               value={destQuery}
               onFocus={() => setFocusedField('dest')}
-              onBlur={() => window.setTimeout(() => setFocusedField(null), 180)}
+              onBlur={(event) => {
+                if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) setFocusedField(null)
+              }}
               onChange={(e) => setDestQuery(e.target.value)}
               placeholder={
                 lang === 'vi' ? 'Nhập địa chỉ hoặc địa điểm đến...' : 'Enter destination address...'
               }
-              className="bg-white border-[#dfe1d8] border-[1.5px] min-h-[54px] px-[16px] rounded-[999px] w-full font-['Plus_Jakarta_Sans:Regular'] text-[#191b14] text-[15px] outline-none focus:border-[#191b14]"
+              className="bg-white border-[#dfe1d8] border-[1.5px] min-h-[54px] px-[16px] rounded-[999px] w-full font-['Plus_Jakarta_Sans:Regular'] text-[#191b14] text-base outline-none focus:border-[#191b14]"
             />
             <p className="font-['Plus_Jakarta_Sans:Regular'] text-[12px] text-[#5d6157] px-[8px] truncate">
               {destinationPlace.address}
             </p>
 
+            {focusedField === 'dest' && suggestionStatus && <p role="status" className="px-2 text-sm text-stone-600">{suggestionMessage}</p>}
             {focusedField === 'dest' && destSuggestions.length > 0 ? (
-              <div className="absolute top-[82px] left-0 right-0 bg-white rounded-[20px] shadow-[0_12px_28px_rgba(26,28,20,0.16)] border border-[#dfe1d8] overflow-hidden z-40">
+              <div className="relative bg-white rounded-[20px] shadow-[0_12px_28px_rgba(26,28,20,0.16)] border border-[#dfe1d8] overflow-hidden z-40">
                 {destSuggestions.map((sug) => (
                   <button
                     key={sug.id}
                     type="button"
-                    onMouseDown={() => {
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => {
                       onChangeDestinationPlace(sug)
                       setDestQuery(sug.label)
                       setFocusedField(null)

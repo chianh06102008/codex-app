@@ -274,7 +274,7 @@ export function HomeScreen({
             onClick={() => setLayersOpen(true)}
             className="bg-[#191b14] flex items-center gap-[7px] px-[12px] py-[6px] rounded-[999px] shadow-sm"
           >
-            <span ref={liveDotRef} className="size-[8px] rounded-full bg-[#22c55e] shrink-0" />
+            <span ref={liveDotRef} className={`size-[8px] rounded-full shrink-0 ${hazards?.isLive ? 'bg-[#22c55e]' : 'bg-stone-400'}`} />
             <span className="font-['Plus_Jakarta_Sans:SemiBold'] font-semibold text-[12px] leading-[18px] text-white whitespace-nowrap">
               {hazardsLoading
                 ? lang === 'vi'
@@ -285,8 +285,8 @@ export function HomeScreen({
                     ? `${activeSourceCount} API · Mưa 24h: ${hazards.weather.hourlySlice.length ? hazards.weather.totalNext24hMm + ' mm' : '—'} · ${segments.length} đoạn đường theo dõi`
                     : `${activeSourceCount} APIs · 24h: ${hazards.weather.hourlySlice.length ? hazards.weather.totalNext24hMm + ' mm' : '—'} · ${segments.length} corridors`
                   : lang === 'vi'
-                    ? 'Đang tải dữ liệu...'
-                    : 'Loading...'}
+                    ? 'Chưa có dữ liệu trực tiếp'
+                    : 'Live data unavailable'}
             </span>
           </button>
         </div>
@@ -294,7 +294,7 @@ export function HomeScreen({
 
       {/* Right Floating Map Controls */}
       <div className="absolute right-[16px] md:right-[24px] bottom-[268px] md:bottom-auto md:top-[24px] z-10 flex flex-col gap-[10px] items-end">
-        <div className="bg-white drop-shadow-[0px_8px_12px_rgba(26,28,20,0.14)] flex flex-col rounded-[16px] overflow-hidden">
+        <div className="bg-white drop-shadow-[0px_8px_12px_rgba(26,28,20,0.14)] hidden md:flex flex-col rounded-[16px] overflow-hidden">
           <button
             type="button"
             onClick={() => mapRef.current?.zoomIn()}

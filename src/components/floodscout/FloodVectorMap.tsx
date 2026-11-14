@@ -71,6 +71,7 @@ export const FloodVectorMap = forwardRef<FloodVectorMapHandle, FloodVectorMapPro
     const containerRef = useRef<HTMLDivElement | null>(null)
     const mapRef = useRef<maplibregl.Map | null>(null)
     const markersRef = useRef<maplibregl.Marker[]>([])
+    const [mapState, setMapState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
     const [styleCounter, setStyleCounter] = useState(0)
 
     const youCoords: [number, number] = originPlace
@@ -116,12 +117,28 @@ export const FloodVectorMap = forwardRef<FloodVectorMapHandle, FloodVectorMapPro
       let cancelled = false
       let resizeObs: ResizeObserver | null = null
       let switchedFallback = false
+      let timeout: number | undefined
+      setMapState('loading')
+
+      const fallback = (map: maplibregl.Map) => {
+        if (cancelled) return
+        if (switchedFallback) {
+          setMapState('unavailable')
+          return
+        }
+        switchedFallback = true
+        map.setStyle(getRasterFallbackStyle())
+        timeout = window.setTimeout(() => fallback(map), 6500)
+      }
 
       ;(async () => {
         try {
-          const style = await getFloodScoutVectorStyle(dataSaver)
+          const rasterFirst = dataSaver || new URLSearchParams(location.search).has('expo')
+          switchedFallback = rasterFirst
+          const style = rasterFirst ? getRasterFallbackStyle() : await getFloodScoutVectorStyle()
           if (cancelled || !containerRef.current) return
 
+          const isTouchMap = window.matchMedia('(pointer: coarse)').matches || new URLSearchParams(location.search).has('expo')
           const map = new maplibregl.Map({
             container: containerRef.current,
             style,
@@ -130,15 +147,27 @@ export const FloodVectorMap = forwardRef<FloodVectorMapHandle, FloodVectorMapPro
             attributionControl: false,
             pitchWithRotate: false,
             dragRotate: false,
+            touchZoomRotate: true,
+            doubleClickZoom: !isTouchMap,
+            scrollZoom: !isTouchMap,
+            boxZoom: !isTouchMap,
           })
 
+          map.touchZoomRotate.disableRotation()
           map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
           mapRef.current = map
+          timeout = window.setTimeout(() => fallback(map), 6500)
 
           if (typeof ResizeObserver !== 'undefined') {
             resizeObs = new ResizeObserver(() => map.resize())
             resizeObs.observe(containerRef.current)
           }
+
+          map.on('idle', () => {
+            if (cancelled || !map.areTilesLoaded()) return
+            window.clearTimeout(timeout)
+            setMapState('ready')
+          })
 
           map.on('load', () => {
             map.resize()
@@ -157,17 +186,18 @@ export const FloodVectorMap = forwardRef<FloodVectorMapHandle, FloodVectorMapPro
               !switchedFallback &&
               (ev?.sourceId === 'openmaptiles' || msg.includes('openfreemap'))
             ) {
-              switchedFallback = true
-              map.setStyle(getRasterFallbackStyle())
+              window.clearTimeout(timeout)
+              fallback(map)
             }
           })
         } catch {
-          // Map initialization handled safely
+          if (!cancelled) setMapState('unavailable')
         }
       })()
 
       return () => {
         cancelled = true
+        window.clearTimeout(timeout)
         resizeObs?.disconnect()
         for (const m of markersRef.current) m.remove()
         markersRef.current = []
@@ -719,7 +749,16 @@ export const FloodVectorMap = forwardRef<FloodVectorMapHandle, FloodVectorMapPro
 
     return (
       <div className="absolute inset-0 bg-[#ecede6] overflow-hidden">
-        <div ref={containerRef} className="absolute inset-0 h-full w-full" />
+        <div ref={containerRef} className="absolute inset-0 h-full w-full touch-none" />
+        {mapState !== 'ready' && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-20 text-center">
+            <p role="status" className="rounded-xl bg-white/95 px-4 py-3 text-sm font-medium text-stone-800 shadow-sm">
+              {mapState === 'loading'
+                ? (lang === 'vi' ? 'Đang tải bản đồ…' : 'Loading map…')
+                : (lang === 'vi' ? 'Chưa tải được bản đồ. Bạn vẫn có thể tìm đường.' : 'Map unavailable. You can still search for a route.')}
+            </p>
+          </div>
+        )}
       </div>
     )
   },

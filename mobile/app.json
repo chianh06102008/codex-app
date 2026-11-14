@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "FloodScout VN",
+    "slug": "floodscout-vn",
+    "orientation": "portrait",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  }
+}

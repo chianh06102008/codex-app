@@ -158,6 +158,11 @@ export function FloodScoutClientApp({
   const includeOptional = enabledSources.nasaEonet || enabledSources.usgsQuakes
 
   const refreshHazards = useCallback(async (signal?: AbortSignal) => {
+    if (signal?.aborted) return
+    const request = new AbortController()
+    const cancel = () => request.abort()
+    signal?.addEventListener('abort', cancel, { once: true })
+    const timeout = window.setTimeout(cancel, 15_000)
     setHazardsLoading(true)
     try {
       const query = new URLSearchParams({ optional: includeOptional ? '1' : '0' })
@@ -165,7 +170,7 @@ export function FloodScoutClientApp({
         query.set('lat', String(warningLocation.lat))
         query.set('lon', String(warningLocation.lon))
       }
-      const res = await fetch(`/runtime/hazards?${query}`, { cache: 'no-store', signal })
+      const res = await fetch(`/runtime/hazards?${query}`, { cache: 'no-store', signal: request.signal })
 
       if (res.ok) {
         const snap = (await res.json()) as LiveHazardSnapshot
@@ -179,6 +184,8 @@ export function FloodScoutClientApp({
     } catch {
       if (!signal?.aborted) setHazards(null)
     } finally {
+      window.clearTimeout(timeout)
+      signal?.removeEventListener('abort', cancel)
       if (!signal?.aborted) setHazardsLoading(false)
     }
   }, [includeOptional, preciseLocationConsent, warningLocation])

@@ -103,8 +103,8 @@ export async function GET(request: Request) {
         place: {
           id: `rev-${lon.toFixed(5)}-${lat.toFixed(5)}`,
           label: `Vị trí (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
-          address: `${lat.toFixed(5)}, ${lon.toFixed(5)} · Hà Nội`,
-          district: 'Hà Nội',
+          address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+          district: '',
           lon,
           lat,
         } satisfies GeocodePlace,
@@ -116,83 +116,74 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: CURATED_HANOI_PLACES })
   }
 
-  const qLower = q.toLowerCase()
+  const normalize = (text: string) => text.toLowerCase().normalize('NFD')
+    .replace(/\p{M}/gu, '').replace(/đ/g, 'd').trim()
+  const qLower = normalize(q)
   const localMatches = CURATED_HANOI_PLACES.filter(
-    (p) => p.label.toLowerCase().includes(qLower) || p.address.toLowerCase().includes(qLower),
+    (p) => normalize(p.label).includes(qLower) || normalize(p.address).includes(qLower),
   )
 
-  const remoteMatches: GeocodePlace[] = []
+  if (localMatches.length > 0 || q.length < 2) {
+    return NextResponse.json({ results: localMatches })
+  }
 
-  const [nomRes, photonRes] = await Promise.allSettled([
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-        q.includes('Hà Nội') || q.includes('Việt Nam') ? q : `${q}, Hà Nội`,
-      )}&countrycodes=vn&limit=5&addressdetails=1&accept-language=vi`,
-      {
-        headers: { 'User-Agent': 'FloodScoutVN/2.0 (disaster-routing)' },
-        signal: AbortSignal.timeout(4500),
-      },
-    ),
-    fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=21.005&lon=105.815&limit=5`,
-      { signal: AbortSignal.timeout(4500) },
-    ),
-  ])
+  const text = q.slice(0, 180)
+  const countryBox = '102,8,110,24'
+  const photonBase = process.env.APP_PHOTON_BASE_URL || 'https://photon.komoot.io'
+  const photon = new URL('/api/', photonBase)
+  photon.search = new URLSearchParams({ q: text, bbox: countryBox, limit: '12' }).toString()
+  const locality = new URL('https://geocoding-api.open-meteo.com/v1/search')
+  locality.search = new URLSearchParams({ name: text, countryCode: 'VN', count: '7' }).toString()
 
-  if (nomRes.status === 'fulfilled' && nomRes.value.ok) {
+  async function search(url: URL, timeout: number) {
     try {
-      const items = await nomRes.value.json()
-      for (const it of Array.isArray(items) ? items : []) {
-        const lon = Number(it.lon)
-        const lat = Number(it.lat)
-        if (Number.isNaN(lon) || Number.isNaN(lat)) continue
-        const addr = it.address ?? {}
-        const label = it.name || addr.road || String(it.display_name || '').split(',')[0] || q
-        const district = addr.city_district || addr.county || addr.city || addr.state || 'Việt Nam'
-        remoteMatches.push({
-          id: `nom-${it.place_id}`,
-          label: String(label),
-          address: String(it.display_name || label),
-          district: String(district),
-          lon,
-          lat,
-        })
-      }
+      const response = await fetch(url, { signal: AbortSignal.timeout(timeout), next: { revalidate: 3600 } })
+      return response.ok ? await response.json() : null
     } catch {
-      // Ignore
+      return null
     }
   }
 
-  if (photonRes.status === 'fulfilled' && photonRes.value.ok && remoteMatches.length < 4) {
-    try {
-      const pj = await photonRes.value.json()
-      for (const f of Array.isArray(pj?.features) ? pj.features : []) {
-        const coords = f?.geometry?.coordinates
-        const props = f?.properties ?? {}
-        if (!Array.isArray(coords) || props.countrycode !== 'VN') continue
-        const label = props.name || props.street || q
-        const parts = [props.housenumber, props.street, props.district, props.city || 'Hà Nội']
-          .filter(Boolean)
-          .join(', ')
-        remoteMatches.push({
-          id: `ph-${props.osm_id || Math.random()}`,
-          label: String(label),
-          address: parts || String(label),
-          district: String(props.district || props.city || 'Việt Nam'),
-          lon: Number(coords[0]),
-          lat: Number(coords[1]),
-        })
-      }
-    } catch {
-      // Ignore
-    }
+  const [streetData, localityData] = await Promise.all([search(photon, 3000), search(locality, 2500)])
+  const streets: GeocodePlace[] = []
+  for (const feature of Array.isArray(streetData?.features) ? streetData.features : []) {
+    const props = feature?.properties
+    const coords = feature?.geometry?.coordinates
+    if (props?.countrycode !== 'VN' || !Array.isArray(coords)) continue
+    const [lon, lat] = coords
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue
+    const label = props.name || props.street
+    if (!label) continue
+    const address = [props.housenumber, props.street, props.district, props.city || props.state]
+      .filter(Boolean).join(', ')
+    streets.push({
+      id: `ph-${props.osm_type ?? 'place'}-${props.osm_id ?? `${lon}-${lat}`}`,
+      label,
+      address: address || label,
+      district: props.district || props.city || props.state || '',
+      lon,
+      lat,
+    })
   }
 
-  const combined: GeocodePlace[] = [...localMatches]
-  for (const cand of remoteMatches) {
-    const dup = combined.some((ex) => Math.hypot(ex.lon - cand.lon, ex.lat - cand.lat) < 0.0005)
-    if (!dup) combined.push(cand)
+  const matches = [...streets]
+  for (const place of Array.isArray(localityData?.results) ? localityData.results : []) {
+    const { name, longitude: lon, latitude: lat } = place
+    if (place.country_code !== 'VN' || typeof name !== 'string'
+      || !Number.isFinite(lon) || !Number.isFinite(lat)) continue
+    if (matches.some((item) => Math.hypot(item.lon - lon, item.lat - lat) < 0.0005)) continue
+    matches.push({
+      id: `locality-${place.id ?? `${lon}-${lat}`}`,
+      label: name,
+      address: [...new Set([name, place.admin2, place.admin1, place.country].filter(Boolean))].join(', '),
+      district: place.admin2 || place.admin1 || '',
+      lon,
+      lat,
+    })
   }
 
-  return NextResponse.json({ results: combined.slice(0, 7) })
+  return NextResponse.json({
+    results: matches.slice(0, 7),
+    unavailable: !streetData && matches.length === 0,
+  })
 }

@@ -47,7 +47,10 @@ const nextConfig: NextConfig = {
   // so the Payload `/admin` panel renders blank in the preview iframe.
   // Dev-only - ignored by `next build`.
   //
-  allowedDevOrigins: makePublicPreviewOrigin ? [makePublicPreviewOrigin] : [],
+  allowedDevOrigins: [
+    ...(makePublicPreviewOrigin ? [makePublicPreviewOrigin] : []),
+    ...(process.env.APP_DEV_LAN_HOST ? [process.env.APP_DEV_LAN_HOST] : []),
+  ],
   // Prerender source maps add ~100 MB per static build worker
   enablePrerenderSourceMaps: false,
   experimental: {

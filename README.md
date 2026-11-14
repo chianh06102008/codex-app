@@ -34,11 +34,31 @@ Create the first CMS admin at `/admin` through that protected URL. Back up the
 SQLite database and upload directory together. Existing development databases
 created by schema push should be kept separately from the fresh hosted database.
 
+## Expo Go on a phone
+
+The `mobile/` project loads the current FloodScout app in an Expo Go WebView.
+It uses the same backend as the browser, including Payload and the AI routes.
+
+1. For full device features, use your FloodScout backend's HTTPS address. For a
+   same-Wi-Fi UI preview, run `pnpm dev --hostname 0.0.0.0` at the repo root and
+   use your computer's LAN address, such as `http://192.168.1.20:3000`.
+2. In `mobile/`, copy `.env.example` to `.env.local` and set
+   `EXPO_PUBLIC_FLOODSCOUT_URL` to that address. This is a public URL setting.
+   Keep the OpenAI API key in the backend environment.
+3. In `mobile/`, run `npx --yes pnpm@10.34.3 install --ignore-workspace --frozen-lockfile`. Start from Windows Command Prompt with `node_modules\.bin\expo.cmd start --go --lan` or run `pnpm start` with pnpm 10.
+   Scan the QR code using an Expo Go version compatible with SDK 58.
+   If Metro cannot reach the phone on the LAN, use `pnpm start --tunnel`.
+   The Metro tunnel only serves the mobile bundle. The backend URL must also
+   be reachable from the phone.
+
+Use HTTPS for location and microphone features. If Expo Go's embedded browser
+doesn't grant the required permission, use **Open in browser** inside the app.
+
 ## Prototype files
 
 Open `preview.html` directly in a browser. Vietnamese is the default. Use the language button to switch to English, or enable the optional Google basemap. The schematic is illustrative. Destination checks return a refusal while verified warning and road data are unavailable.
 
-## Expo
+## Legacy Expo prototype
 
 1. Run `npm install`, then `npx expo install --fix` to align packages with the selected SDK.
 2. Copy `.env.example` to `.env`. For Google tiles, enable the relevant Maps SDK and restrict each key to the app identifier and, on Android, its signing certificate.
