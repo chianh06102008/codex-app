@@ -2,9 +2,14 @@
 //
 //   node server/bulletin.mjs                 start the HTTP server (port 8788)
 //   node server/bulletin.mjs --parse <url>   fetch one NCHMF bulletin page and print the OfficialStatement
+//   node server/bulletin.mjs --list [hours]  list bulletins NCHMF published in the last N hours (default 24)
 //   node server/bulletin.mjs --rain <lat> <lon>
 //
 // Endpoints:
+//   GET /                                                  -> browser preview: recent bulletins (dev only)
+//   GET /?url=<nchmf bulletin page>                        -> browser preview of one bulletin (dev only)
+//   GET /api/official/list?hours=24                        -> titles + publish times, per-category status
+//   GET /api/official/recent?hours=24                      -> same bulletins read into OfficialStatement + validity
 //   GET /api/official/statement?url=<nchmf bulletin page>  -> OfficialStatement (parse_status ok | partial | failed)
 //   GET /api/rain?lat=<lat>&lon=<lon>                      -> rain context from Open-Meteo, labeled as a model
 //
@@ -77,7 +82,7 @@ const DO_NOT_TRAVEL = /không ra khỏi nhà|hạn chế ra khỏi nhà|không �
  * Parse an NCHMF bulletin page into an OfficialStatement.
  * Pure function: no network, so it can be tested with a saved page.
  */
-export function parseBulletinHtml({ html, sourceUrl, retrievedAt }) {
+export function parseBulletinHtml({ html, sourceUrl, retrievedAt, publishedAt = null }) {
   const base = {
     id: idFromUrl(sourceUrl),
     source_url: sourceUrl,
@@ -98,35 +103,51 @@ export function parseBulletinHtml({ html, sourceUrl, retrievedAt }) {
   };
 
   const titleMatch = html.match(/<h2[^>]*class="[^"]*tt-content-news[^"]*"[^>]*>([\s\S]*?)<\/h2>/i);
-  const bodyMatch = html.match(/<div class="text-content-news">[\s\S]*?<\/div>\s*(<p>[\s\S]*?<\/p>)/i);
-  if (!titleMatch || !bodyMatch) return base; // failed: keep only the link and time
+  const bodyHtml = bulletinBodyHtml(html);
+  if (!titleMatch || !bodyHtml) return base; // failed: keep only the link and time
 
   const title = htmlToLines(titleMatch[1]).join(' ');
-  const lines = htmlToLines(bodyMatch[1]);
+  const lines = htmlToLines(bodyHtml);
   if (lines.length === 0) return base;
 
   // Issuer: the site's own <title>, as published.
   const pageTitle = html.match(/<title>([\s\S]*?)<\/title>/i);
   const issuer = pageTitle ? htmlToLines(pageTitle[1]).join(' ') || null : null;
 
-  // Issue time: NCHMF names the attached PDF ..._YYYYMMDD_HHMM.pdf. The page itself prints no time.
+  // Issue time, in order of trust:
+  // 1. the bulletin's own words, e.g. "Tin phát lúc 09h00' ngày 13/11/2026" (river-flood bulletins);
+  // 2. `publishedAt` = the time NCHMF prints next to the bulletin in its category list;
+  // 3. the attached PDF's name ..._YYYYMMDD_HHMM.pdf.
+  const body = lines.join('\n');
+  const stated = body.match(/Tin phát lúc\s*(\d{1,2})h(\d{2})['’]?\s*ngày\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
   const pdf = html.match(/href="([^"]+_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})\.pdf)"/i);
-  const validFrom = pdf ? isoVn(+pdf[2], +pdf[3], +pdf[4], +pdf[5], +pdf[6]) : null;
+  const validFrom = stated
+    ? isoVn(+stated[5], +stated[4], +stated[3], +stated[1], +stated[2])
+    : publishedAt ?? (pdf ? isoVn(+pdf[2], +pdf[3], +pdf[4], +pdf[5], +pdf[6]) : null);
 
   // Validity: "Trong 6 giờ tới" -> valid_from + 6 h. No other end time is published on the page.
-  const body = lines.join('\n');
   const hours = body.match(/Trong\s+0?(\d{1,2})\s+giờ\s+tới/i);
   const validUntil =
     validFrom && hours ? addHoursVn(validFrom, Number(hours[1])) : null;
 
-  // Areas: lines like "- TP. Đà Nẵng: A, B, C." -> "TP. Đà Nẵng: A", ... Every name is kept.
+  // Areas. NCHMF uses two list shapes, always as "- " lines right after a line ending in ":":
+  //   "- TP. Đà Nẵng: A, B, C."           -> "TP. Đà Nẵng: A", "TP. Đà Nẵng: B", ...  (communes)
+  //   "- TP. Huế, TP. Đà Nẵng, Gia Lai"   -> "TP. Huế", "TP. Đà Nẵng", "Gia Lai"      (provinces)
+  // Bulletins that only name places in running text (river floods) get no list -> parse_status partial.
   const areaNames = [];
+  let inList = false;
   for (const line of lines) {
-    const area = line.match(/^-\s*([^:]+):\s*(.+)$/);
-    if (!area) continue;
-    for (const name of area[2].split(/[,;]/)) {
+    if (!line.startsWith('-')) {
+      inList = line.endsWith(':');
+      continue;
+    }
+    if (!inList) continue;
+    const withParent = line.match(/^-\s*([^:]+):\s*(.+)$/);
+    const parent = withParent ? withParent[1].trim() + ': ' : '';
+    const names = (withParent ? withParent[2] : line.replace(/^-\s*/, '')).split(/[,;]/);
+    for (const name of names) {
       const clean = name.replace(/\.$/, '').trim();
-      if (clean) areaNames.push(`${area[1].trim()}: ${clean}`);
+      if (clean) areaNames.push(parent + clean);
     }
   }
 
@@ -151,6 +172,137 @@ export function parseBulletinHtml({ html, sourceUrl, retrievedAt }) {
   return statement;
 }
 
+// The bulletin text: everything inside .text-content-news before the signature/download block.
+function bulletinBodyHtml(html) {
+  const start = html.indexOf('<div class="text-content-news">');
+  if (start === -1) return null;
+  const rest = html.slice(start);
+  const ends = ['<p style="text-align: right">', 'Chi tiết tin', '<iframe']
+    .map((marker) => rest.indexOf(marker))
+    .filter((i) => i > 0);
+  return ends.length ? rest.slice(0, Math.min(...ends)) : null;
+}
+
+// ---------- bulletin lists (which bulletins exist right now) ----------
+
+// NCHMF category pages that carry warnings. `hazard` is only a hint for the list;
+// each bulletin's own title decides its hazard_type when it is parsed.
+export const BULLETIN_CATEGORIES = [
+  { key: 'flash_flood', hazard: 'flash_flood', url: 'https://www.nchmf.gov.vn/kttv/vi-VN/1/lu-quet-17-18.html' },
+  { key: 'flood', hazard: 'flood', url: 'https://www.nchmf.gov.vn/kttv/vi-VN/1/lu-ngap-lut-16-18.html' },
+  { key: 'landslide', hazard: 'landslide', url: 'https://www.nchmf.gov.vn/kttv/vi-VN/1/sat-lo-sut-lun-dat-da-18-18.html' },
+  { key: 'heavy_rain', hazard: 'heavy_rain', url: 'https://www.nchmf.gov.vn/kttv/vi-VN/1/mua-lon-mua-lon-dien-rong-2053-15.html' },
+  { key: 'storm', hazard: 'storm', url: 'https://www.nchmf.gov.vn/kttv/vi-VN/1/bao-ap-thap-nhiet-doi-2049-15.html' },
+];
+
+// One list entry: <a href="…postNNN.html">TITLE<span …> ( dd/mm/yyyy hh:mm ) </span></a>
+const LIST_ITEM =
+  /<a href="(https:\/\/www\.nchmf\.gov\.vn\/[^"]*?post(\d+)\.html)">([^<]+)<span[^>]*>\s*\(\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})\s*\)\s*<\/span>/g;
+
+/**
+ * Parse one NCHMF category page into [{ id, source_url, title, published_at, categories }],
+ * newest first. Pure function. Only reads the main list, not the sidebar.
+ */
+export function parseBulletinList(html, categoryKey) {
+  const start = html.indexOf('class="grp-list-item"');
+  if (start === -1) return [];
+  const end = html.indexOf('id="pagenav"', start);
+  const section = html.slice(start, end === -1 ? undefined : end);
+
+  const items = [];
+  const seen = new Set();
+  for (const m of section.matchAll(LIST_ITEM)) {
+    const id = `nchmf-post${m[2]}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    items.push({
+      id,
+      source_url: m[1],
+      title: htmlToLines(m[3]).join(' '),
+      published_at: isoVn(+m[6], +m[5], +m[4], +m[7], +m[8]),
+      categories: [categoryKey],
+    });
+  }
+  return items;
+}
+
+/** Merge lists from several categories: one entry per bulletin, newest first. */
+export function mergeBulletinLists(lists) {
+  const byId = new Map();
+  for (const item of lists.flat()) {
+    const existing = byId.get(item.id);
+    if (existing) existing.categories = [...new Set([...existing.categories, ...item.categories])];
+    else byId.set(item.id, { ...item, categories: [...item.categories] });
+  }
+  return [...byId.values()].sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+}
+
+const listCache = new Map(); // category url -> { items, fetchedAt }
+
+async function fetchCategory(category, now) {
+  const cached = listCache.get(category.url);
+  if (cached && now - cached.fetchedAt < CACHE_TTL_MS) return { key: category.key, status: 'ok', items: cached.items };
+  try {
+    const response = await fetch(category.url, {
+      headers: { 'User-Agent': 'FloodScout/0.1 (bulletin reader)' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const items = parseBulletinList(await response.text(), category.key);
+    // A list page that suddenly has no items is more likely a layout change than "no warnings ever".
+    if (items.length === 0) throw new Error('no items found (layout changed?)');
+    listCache.set(category.url, { items, fetchedAt: now });
+    return { key: category.key, status: 'ok', items };
+  } catch (error) {
+    console.error(`List ${category.key} failed:`, error.message);
+    // Last good list if we have one; the caller still sees status 'last_known'.
+    if (cached) return { key: category.key, status: 'last_known', items: cached.items };
+    return { key: category.key, status: 'failed', items: [] };
+  }
+}
+
+/**
+ * Bulletins published in the last `hours` hours across all warning categories.
+ * Every category reports its own status, so one failed page is never hidden (P10).
+ */
+export async function listRecentBulletins({ hours = 24, now = Date.now() } = {}) {
+  const results = await Promise.all(BULLETIN_CATEGORIES.map((c) => fetchCategory(c, now)));
+  const since = now - hours * 3_600_000;
+  const items = mergeBulletinLists(results.map((r) => r.items)).filter(
+    (item) => new Date(item.published_at).getTime() >= since
+  );
+  return {
+    retrieved_at: new Date(now).toISOString(),
+    hours,
+    categories: results.map(({ key, status, items: list }) => ({ key, status, count: list.length })),
+    complete: results.every((r) => r.status === 'ok'),
+    items,
+  };
+}
+
+/**
+ * Recent bulletins, each fetched and parsed into an OfficialStatement.
+ * At most `limit` pages are fetched, newest first, to stay polite to NCHMF.
+ */
+export async function getRecentStatements({ hours = 24, limit = 15, now = Date.now() } = {}) {
+  const list = await listRecentBulletins({ hours, now });
+  const picked = list.items.slice(0, limit);
+  const statements = [];
+  for (const item of picked) {
+    // One at a time on purpose: a burst of parallel requests to a government site is rude.
+    const { statement, freshness } = await getBulletin(item.source_url, now, item.published_at);
+    statements.push({ ...statement, freshness, validity: validityAt(statement, new Date(now)) });
+  }
+  return {
+    retrieved_at: list.retrieved_at,
+    hours,
+    categories: list.categories,
+    complete: list.complete && list.items.length <= limit,
+    truncated: list.items.length > limit,
+    statements,
+  };
+}
+
 function idFromUrl(url) {
   const post = String(url).match(/post(\d+)/);
   return post ? `nchmf-post${post[1]}` : `nchmf-${Buffer.from(String(url)).toString('base64url').slice(0, 24)}`;
@@ -168,7 +320,7 @@ export function isAllowedBulletinUrl(raw) {
 }
 
 /** Fetch and parse one bulletin. Network failure -> parse_status 'failed' with the link kept. */
-export async function fetchBulletin(sourceUrl) {
+export async function fetchBulletin(sourceUrl, publishedAt = null) {
   const retrievedAt = new Date().toISOString();
   try {
     const response = await fetch(sourceUrl, {
@@ -176,7 +328,7 @@ export async function fetchBulletin(sourceUrl) {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    return parseBulletinHtml({ html: await response.text(), sourceUrl, retrievedAt });
+    return parseBulletinHtml({ html: await response.text(), sourceUrl, retrievedAt, publishedAt });
   } catch (error) {
     console.error('Bulletin fetch failed:', error.message);
     return parseBulletinHtml({ html: '', sourceUrl, retrievedAt });
@@ -190,11 +342,11 @@ const CACHE_TTL_MS = 5 * 60_000;
 const bulletinCache = new Map(); // url -> { statement, fetchedAt }
 
 /** Returns { statement, freshness: 'fresh' | 'cached' | 'last_known' | 'failed' }. */
-export async function getBulletin(sourceUrl, now = Date.now()) {
+export async function getBulletin(sourceUrl, now = Date.now(), publishedAt = null) {
   const cached = bulletinCache.get(sourceUrl);
   if (cached && now - cached.fetchedAt < CACHE_TTL_MS) return { statement: cached.statement, freshness: 'cached' };
 
-  const statement = await fetchBulletin(sourceUrl);
+  const statement = await fetchBulletin(sourceUrl, publishedAt);
   if (statement.parse_status !== 'failed') {
     bulletinCache.set(sourceUrl, { statement, fetchedAt: now });
     return { statement, freshness: 'fresh' };
@@ -261,9 +413,6 @@ function send(res, status, body, headers = {}) {
     .end(JSON.stringify(body));
 }
 
-// The real bulletin pinned in fixtures/statements/, used as the viewer's default.
-const DEFAULT_BULLETIN_URL =
-  'https://www.nchmf.gov.vn/kttv/vi-VN/1/tin-canh-bao-lu-quet-sat-lo-dat-sut-lun-dat-do-mua-lu-hoac-dong-chay-tren-khu-vuc-cac-tinh-thanh-pho-da-nang-va-quang-ngai-post55215.html';
 const DEFAULT_POINT = { lat: 16.061, lon: 108.218 }; // Da Nang, same center as App.tsx
 
 export function createServer() {
@@ -279,6 +428,16 @@ export function createServer() {
       return send(res, 200, statement, { 'X-Bulletin-Freshness': freshness });
     }
 
+    if (url.pathname === '/api/official/list' || url.pathname === '/api/official/recent') {
+      const hours = Number(url.searchParams.get('hours') || 24);
+      if (!Number.isInteger(hours) || hours < 1 || hours > 168) return send(res, 400, { error: 'hours must be 1–168' });
+      const body =
+        url.pathname === '/api/official/list'
+          ? await listRecentBulletins({ hours }) // titles + times only, fast
+          : await getRecentStatements({ hours }); // each bulletin read into an OfficialStatement
+      return send(res, 200, body);
+    }
+
     if (url.pathname === '/api/rain') {
       try {
         const rain = await fetchRain(Number(url.searchParams.get('lat')), Number(url.searchParams.get('lon')));
@@ -292,10 +451,11 @@ export function createServer() {
 
     // Developer preview: a plain web page that shows what the parser read, for reviewing in a browser.
     if (url.pathname === '/') {
-      const source = url.searchParams.get('url') || DEFAULT_BULLETIN_URL;
-      const html = isAllowedBulletinUrl(source)
-        ? await renderPreview(source)
-        : renderPage('<p class="bad">Link phải là trang https://www.nchmf.gov.vn/…</p>', source);
+      const source = url.searchParams.get('url');
+      let html;
+      if (!source) html = await renderListPreview(Number(url.searchParams.get('hours') || 48));
+      else if (isAllowedBulletinUrl(source)) html = await renderPreview(source);
+      else html = renderPage('<p class="bad">Link phải là trang https://www.nchmf.gov.vn/…</p>', source);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(html);
       return;
     }
@@ -358,6 +518,53 @@ async function renderPreview(source) {
   return renderPage(`${body}<h2>Mưa (mô hình)</h2>${rainHtml}`, source);
 }
 
+const CATEGORY_LABEL = {
+  flash_flood: 'Lũ quét',
+  flood: 'Lũ, ngập lụt',
+  landslide: 'Sạt lở, sụt lún',
+  heavy_rain: 'Mưa lớn',
+  storm: 'Bão, áp thấp',
+};
+
+async function renderListPreview(rawHours) {
+  const hours = Number.isInteger(rawHours) && rawHours >= 1 && rawHours <= 168 ? rawHours : 48;
+  const list = await listRecentBulletins({ hours });
+
+  // Any category we could not read is said out loud, never silently dropped (P10).
+  const broken = list.categories.filter((c) => c.status !== 'ok');
+  const bandHtml = broken.length
+    ? `<p class="band bad">Không lấy được tình trạng chính thức của: ${broken
+        .map((c) => escapeHtml(CATEGORY_LABEL[c.key]) + ' (' + escapeHtml(c.status) + ')')
+        .join(', ')}. Đừng coi map trống là hết cảnh báo.</p>`
+    : '';
+
+  const rows = list.items
+    .map((item) => {
+      const detail = '/?url=' + encodeURIComponent(item.source_url);
+      const tags = item.categories.map((k) => escapeHtml(CATEGORY_LABEL[k])).join(', ');
+      return `<li><a href="${escapeHtml(detail)}">${escapeHtml(item.title)}</a>
+        <div class="muted">${escapeHtml(fmtVn(item.published_at))} · ${tags}</div></li>`;
+    })
+    .join('');
+
+  const empty = list.complete
+    ? `<p>NCHMF chưa đăng bản tin nào trong ${hours} giờ qua ở các mục này. Danh sách chỉ gồm các mục bên dưới, không phải mọi cảnh báo.</p>`
+    : '';
+
+  const summary = list.categories
+    .map((c) => `${escapeHtml(CATEGORY_LABEL[c.key])}: ${escapeHtml(c.status)}`)
+    .join(' · ');
+
+  return renderPage(
+    `${bandHtml}
+     <p>Bản tin NCHMF trong <b>${hours} giờ</b> qua (${list.items.length}). Xem
+       <a href="/?hours=24">24 giờ</a> · <a href="/?hours=48">48 giờ</a> · <a href="/?hours=168">7 ngày</a>.</p>
+     <ul class="list">${rows}</ul>${list.items.length ? '' : empty}
+     <p class="muted">Lấy lúc ${escapeHtml(fmtVn(list.retrieved_at))}. ${summary}</p>`,
+    ''
+  );
+}
+
 function renderPage(content, source) {
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -370,8 +577,9 @@ function renderPage(content, source) {
   dt{font-weight:700;margin-top:6px} dd{margin:0}
   form{display:flex;gap:8px;margin-bottom:16px} input{flex:1;padding:8px;min-height:32px}
   .emergency{margin-top:24px;font-weight:700}
+  .list{padding:0;list-style:none} .list li{background:#fff;border-radius:8px;padding:10px 12px;margin:8px 0}
 </style></head><body>
-<h1>Official status · dev preview</h1>
+<h1><a href="/" style="color:inherit;text-decoration:none">Official status · dev preview</a></h1>
 <form><input name="url" value="${escapeHtml(source)}" aria-label="Link bản tin NCHMF"><button>Đọc</button></form>
 ${content}
 <p class="emergency">113 · 114 · 115. FloodScout không phải đơn vị cứu hộ.</p>
@@ -388,6 +596,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
       process.exit(1);
     }
     console.log(JSON.stringify(await fetchBulletin(a), null, 2));
+  } else if (flag === '--list') {
+    console.log(JSON.stringify(await listRecentBulletins({ hours: Number(a) || 24 }), null, 2));
   } else if (flag === '--rain') {
     try {
       console.log(JSON.stringify(await fetchRain(Number(a), Number(b)), null, 2));

@@ -27,3 +27,16 @@ How each field was filled:
 Not copied into the schema: section 1 (rain observed in the past 6 hours) and section 2 (rain forecast for the next 6 hours: "phổ biến từ 20-40mm, có nơi trên 80mm"). Both are in the PDF.
 
 This bulletin expired at 05:20 on 14/11/2026. Code should show it as expired once past `valid_until`, not as in force.
+
+## raw/
+
+Unmodified copies of real NCHMF pages, saved 14/11/2026, so `node --test server/bulletin.test.mjs` runs without network:
+
+| File | What it covers |
+|---|---|
+| `nchmf-post55215.html` | Flash-flood bulletin, communes listed per province (`- TP. Đà Nẵng: A, B, …`) |
+| `nchmf-post55196.html` | Flash-flood bulletin, provinces only (`- TP. Huế, TP. Đà Nẵng, …`) |
+| `nchmf-post55197.html` | River-flood bulletin: places only in running text, own "Tin phát lúc" time, "Cấp 1" |
+| `nchmf-list-lu-quet.html` | Category list "Lũ quét" (10 items, text-only layout) |
+| `nchmf-list-mua-lon.html` | Category list "Mưa lớn" (3 items, layout with thumbnails) |
+| `nchmf-list-sat-lo.html` | Category list "Sạt lở, sụt lún" |
