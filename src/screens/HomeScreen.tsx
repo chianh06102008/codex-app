@@ -15,6 +15,7 @@ import { useOfficialSource } from '@/features/fusion/officialSource';
 import { NearYou } from '@/features/near/NearYou';
 import { LiveOverlays } from '@/features/live/LiveOverlays';
 import { LayerToggles } from '@/features/live/LayerToggles';
+import { WeatherStrip } from '@/features/live/WeatherStrip';
 import { LIVE } from '@/copy/live';
 import { useSegmentStates } from '@/features/fusion/segmentStates';
 import { FloodMap } from '@/features/map/FloodMap';
@@ -117,6 +118,8 @@ export function HomeScreen({ lang, go }: { lang: Lang; go: (screen: Screen) => v
             {official.rain.heavy && <T t="small" w="semibold">{mr.rainHeavy}</T>}
           </View>
         )}
+
+        <WeatherStrip lang={lang} />
 
         <ScrollView
           horizontal

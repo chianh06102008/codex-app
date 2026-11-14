@@ -27,6 +27,13 @@ export type Weather = {
   cloudCoverPct: number | null;
   windGustKmh: number | null;
   humidityPct: number | null;
+  feelsLikeC: number | null;
+  windKmh: number | null;
+  windDirDeg: number | null;
+  pressureHpa: number | null;
+  visibilityM: number | null;
+  uvIndex: number | null;
+  isDay: boolean | null;
   hourly: { time: string; mm: number; probability: number | null; cloud: number | null }[]; // next 12 h
   next24hMm: number;
   next3dMm: number[]; // daily sums, today first
@@ -35,7 +42,7 @@ export type Weather = {
 export async function fetchWeather(p: LatLon): Promise<Weather> {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude.toFixed(4)}&longitude=${p.longitude.toFixed(4)}` +
-    '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_gusts_10m' +
+    '&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,uv_index,is_day' +
     '&hourly=precipitation,precipitation_probability,cloud_cover&forecast_hours=24' +
     '&daily=precipitation_sum&forecast_days=3&timezone=auto';
   type R = {
@@ -57,6 +64,13 @@ export async function fetchWeather(p: LatLon): Promise<Weather> {
     cloudCoverPct: num(b.current?.cloud_cover),
     windGustKmh: num(b.current?.wind_gusts_10m),
     humidityPct: num(b.current?.relative_humidity_2m),
+    feelsLikeC: num(b.current?.apparent_temperature),
+    windKmh: num(b.current?.wind_speed_10m),
+    windDirDeg: num(b.current?.wind_direction_10m),
+    pressureHpa: num(b.current?.surface_pressure),
+    visibilityM: num(b.current?.visibility),
+    uvIndex: num(b.current?.uv_index),
+    isDay: b.current?.is_day == null ? null : b.current.is_day === 1,
     hourly: hourly.slice(0, 12),
     next24hMm: Math.round(hourly.reduce((a, x) => a + x.mm, 0) * 10) / 10,
     next3dMm: (b.daily?.precipitation_sum ?? []).map((x) => num(x) ?? 0),

@@ -3,7 +3,7 @@
 // killed app (T08). Only the redacted image is kept or uploaded (T13).
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState , useMemo} from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Checkbox, Icon, Switch, Text } from 'react-native-paper';
 
@@ -20,6 +20,7 @@ import { redactPhoto } from '@/features/report/redact';
 import { addReport } from '@/features/report/reportStore';
 import { allowedCategories, canPublish, restoreDraft } from '@/features/report/rules';
 import { analyzePhoto } from '@/features/report/vision';
+import { describeSegment, snapAnywhere } from '@/features/live/snapAnywhere';
 import { updateSession } from '@/features/routing/session';
 import { SpeedGate } from '@/features/speed-gate/SpeedGate';
 import { useSpeed } from '@/features/speed-gate/speed';
@@ -83,10 +84,10 @@ export function ReportScreen({ lang, go }: Props) {
       let point = null;
       if (speed.permission === 'granted') {
         try {
-          const pos = await Location.getLastKnownPositionAsync();
+          const pos = (await Location.getLastKnownPositionAsync()) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }));
           const p = pos && { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          const snap = p && insideSlice(p) ? snapToRoad(p, SNAP_MAX_M) : null;
-          if (snap) { segmentId = snap.segment.id; point = snap.point; }
+          const snap = p ? snapAnywhere(p) : null;
+          if (snap) { segmentId = snap.segmentId; point = snap.point; }
         } catch { /* person confirms on the map anyway */ }
       }
       update({ photoUri: red.uri, photoBytes: red.bytes, step: 3, segmentId, point, vision: null });
@@ -140,7 +141,19 @@ export function ReportScreen({ lang, go }: Props) {
     setRestored(false);
   }
 
-  const seg = draft.segmentId ? SEGMENT_BY_ID.get(draft.segmentId) : null;
+  const seg = describeSegment(draft.segmentId);
+  const fitLat = draft.point?.latitude;
+  const fitLon = draft.point?.longitude;
+  const fitAround = useMemo(
+    () =>
+      fitLat === undefined || fitLon === undefined
+        ? null
+        : [
+            { latitude: fitLat + 0.002, longitude: fitLon + 0.002 },
+            { latitude: fitLat - 0.002, longitude: fitLon - 0.002 },
+          ],
+    [fitLat, fitLon],
+  );
 
   return (
     <SpeedGate lang={lang}>
@@ -215,12 +228,14 @@ export function ReportScreen({ lang, go }: Props) {
               statements={official.statements}
               highlightSegmentId={draft.segmentId}
               onPress={(p) => {
-                const snap = snapToRoad(p, SNAP_MAX_M);
-                if (snap) { update({ segmentId: snap.segment.id, point: snap.point }); setError(''); }
+                const snap = snapAnywhere(p);
+                if (snap) { update({ segmentId: snap.segmentId, point: snap.point }); setError(''); }
                 else setError(c.noRoadNear);
               }}
               height={300}
-
+              routes={seg?.geometry && !SEGMENT_BY_ID.get(draft.segmentId ?? '') ? [seg.geometry] : []}
+              destination={draft.point ?? null}
+              fitTo={fitAround}
             />
             {seg && <Text variant="titleMedium">{seg.name ?? c.unnamedRoad}</Text>}
             {!!error && <Text style={styles.error}>{error}</Text>}
@@ -296,7 +311,7 @@ export function ReportScreen({ lang, go }: Props) {
               <Icon source="check-circle-outline" size={40} color={BRAND.primary} />
               <Text variant="titleMedium" style={{ color: BRAND.ink }}>{c.savedLocal}</Text>
             </View>
-            {draft.segmentId && (
+            {draft.segmentId && SEGMENT_BY_ID.has(draft.segmentId) && (
               <Button mode="contained" icon="map-marker-radius" contentStyle={styles.cta} onPress={() => { updateSession({ segmentId: draft.segmentId }); go('segment'); }}>
                 {c.whyRoad} {seg?.name ?? ''}
               </Button>

@@ -17,7 +17,7 @@ const report = (p: Partial<Report>): Report => ({
   water_visible: true, obstruction: 'none', vehicle_context: null, no_water: false, reporter_trust: 'normal', perceptual_hash: null,
   status: 'active', retracted_at: null, ...p,
 });
-const dry: Weather = { retrievedAt: '', temperatureC: 25, precipitationMm: 0, weatherCode: 0, cloudCoverPct: 10, windGustKmh: 5, humidityPct: 60, hourly: [], next24hMm: 0, next3dMm: [] };
+const dry: Weather = { retrievedAt: '', temperatureC: 25, precipitationMm: 0, weatherCode: 0, cloudCoverPct: 10, windGustKmh: 5, humidityPct: 60, feelsLikeC: 25, windKmh: 5, windDirDeg: 0, pressureHpa: 1010, visibilityM: 10000, uvIndex: 1, isDay: true, hourly: [], next24hMm: 0, next3dMm: [] };
 const base = { here, reports: [] as Report[], now, feedOk: true, officialInForce: false, wet: false, heavyRain: false };
 
 describe('live road assessment', () => {

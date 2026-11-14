@@ -187,6 +187,11 @@ export function LiveScreen({ lang }: { lang: Lang }) {
               <Chip text={c.clouds(w.cloudCoverPct ?? '–')} />
               <Chip text={c.gusts(w.windGustKmh ?? '–')} />
               <Chip text={c.humidity(w.humidityPct ?? '–')} />
+              <Chip text={c.feels(w.feelsLikeC ?? '–')} />
+              <Chip text={c.wind(w.windKmh ?? '–', w.windDirDeg === null ? '' : c.dirs[Math.round(w.windDirDeg / 45) % 8])} />
+              <Chip text={c.pressure(w.pressureHpa === null ? '–' : Math.round(w.pressureHpa))} />
+              <Chip text={c.visibility(w.visibilityM === null ? '–' : Math.round(w.visibilityM / 100) / 10)} />
+              <Chip text={c.uv(w.uvIndex ?? '–')} />
             </View>
             <T t="small" w="semibold">{c.next12}</T>
             <View style={styles.bars}>
